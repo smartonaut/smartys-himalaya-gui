@@ -112,6 +112,30 @@ python3 -m smartys_mail.desktop      # Fenster-Variante (braucht GTK/WebKit)
 Keine Abhängigkeiten außer Python 3.11+ (wegen `tomllib`). Die Fenster-Variante
 braucht zusätzlich `python3-gi` und `gir1.2-webkit2-4.1`.
 
+### Wo läuft himalaya?
+
+Die Oberfläche kann himalaya auf **diesem** Rechner benutzen oder auf einem
+**anderen**. Umschalten über das Zahnrad ⚙ im Kontenbereich.
+
+Der zweite Weg ist für mehrere Geräte gedacht: Die Postfächer und
+Zugangsdaten bleiben auf einem Rechner (etwa dem Heimserver), und jeder
+Client braucht nur einen SSH-Schlüssel dorthin. Der öffentliche Schlüssel des
+Clients muss auf dem Zielrechner in `~/.ssh/authorized_keys` liegen.
+
+```
+Modus:      Auf einem anderen Rechner (SSH)
+Rechner:    benutzer@192.168.1.238
+himalaya:   himalaya        (oder /home/benutzer/.local/bin/himalaya)
+```
+
+Nach dem Speichern prüft die Oberfläche die Verbindung und meldet, wie viele
+Konten sie dort findet. Der erste Aufruf nimmt den SSH-Schlüssel des
+Zielrechners an; ein später **geänderter** Schlüssel wird abgelehnt.
+
+Warum nicht einfach die `config.toml` kopieren? Darin stehen alle Passwörter
+und OAuth-Token im Klartext. Kopieren wäre bequem und würde diese Daten über
+alle Geräte verteilen. Über SSH bleiben sie an einer Stelle.
+
 ### Ohne echtes Postfach ausprobieren
 
 ```bash
@@ -165,6 +189,10 @@ Die Gruppe eines Kontos ist der Teil vor dem ersten Bindestrich:
 | `SMARTYS_MAIL_DEMO` | `1` = Beispieldaten statt echter Postfächer |
 | `SMARTYS_MAIL_SIG` | Pfad zur Signaturdatei |
 | `SMARTYS_MAIL_HIMALAYA` | Pfad zur himalaya-Binary |
+| `SMARTYS_MAIL_SSH` | `benutzer@rechner` — himalaya dort per SSH nutzen |
+| `SMARTYS_MAIL_SSH_HIMALAYA` | Pfad zu himalaya auf dem entfernten Rechner |
+| `SMARTYS_MAIL_CONFIG` | Pfad zur himalaya-Konfiguration |
+| `SMARTYS_MAIL_DATEN` | Ordner für Zwischendateien |
 
 ## Sicherheit
 
