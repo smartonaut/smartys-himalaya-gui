@@ -10,8 +10,10 @@ import json
 import os
 import subprocess
 
+from . import pfade
+
 # Ueberschreibbar, falls himalaya woanders liegt
-HIMALAYA = os.environ.get("SMARTYS_MAIL_HIMALAYA") or os.path.expanduser("~/.local/bin/himalaya")
+HIMALAYA = pfade.himalaya_binary()
 if not os.path.exists(HIMALAYA):
     HIMALAYA = "himalaya"
 

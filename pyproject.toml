@@ -5,6 +5,9 @@ description = "Grafische Oberflaeche fuer himalaya — Mail-Client mit OAuth2, A
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
+# Laeuft ohne Zusatzpakete als Web-Oberflaeche. Fuer das eigene Fenster
+# empfiehlt sich pywebview (Windows: Edge WebView2, Linux: GTK/Qt).
+dependencies = []
 authors = [{name = "Smartys"}]
 keywords = ["email", "imap", "smtp", "himalaya", "gui", "webmail"]
 classifiers = [
@@ -13,6 +16,9 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Topic :: Communications :: Email :: Email Clients (MUA)",
 ]
+
+[project.optional-dependencies]
+fenster = ["pywebview>=5.0"]
 
 [project.urls]
 Homepage = "https://github.com/smartonaut/smartys-himalaya-gui"

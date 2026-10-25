@@ -12,14 +12,14 @@ import tomllib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs, quote
 
-from . import demo, himalaya, konten, signaturen
+from . import demo, himalaya, konten, pfade, signaturen
 from .mime import mail_text, nachricht_bauen
 
 PORT = int(os.environ.get("SMARTYS_MAIL_PORT", "8770"))
 BIND = os.environ.get("SMARTYS_MAIL_BIND", "127.0.0.1")
 WEB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
-HIMALAYA_CONFIG = os.path.expanduser("~/.config/himalaya/config.toml")
-DOWNLOAD_TMP = os.path.expanduser("~/.cache/smartys-himalaya-gui/downloads")
+HIMALAYA_CONFIG = pfade.himalaya_config()
+DOWNLOAD_TMP = os.path.join(pfade.datenordner(), "downloads")
 # Beispieldaten statt echter Postfaecher (Screenshots, Ausprobieren)
 DEMO = os.environ.get("SMARTYS_MAIL_DEMO") == "1"
 

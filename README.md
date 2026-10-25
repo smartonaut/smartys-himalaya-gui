@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/icons/logo_256.png" width="132" alt="Smartys Himalaya GUI">
+</p>
+
 # Smartys Himalaya GUI
 
 ![Screenshot](docs/screenshot.png)
@@ -71,6 +75,30 @@ Beim ersten Start führt die Oberfläche durch das Anlegen eines Kontos:
 E-Mail-Adresse eingeben, Passwort eintragen — die Servereinstellungen werden
 anhand der Domain erkannt. Für Gmail, Yahoo und Microsoft wird zusätzlich
 erklärt, wo das nötige App-Passwort zu finden ist.
+
+### Windows
+
+Fertige `.exe` unter [Releases](https://github.com/smartonaut/smartys-himalaya-gui/releases)
+— einfach herunterladen und starten, kein Python nötig.
+
+Voraussetzung ist `himalaya.exe`:
+
+1. Von <https://github.com/pimalaya/himalaya/releases> die
+   `himalaya-x86_64-pc-windows-msvc.zip` laden und entpacken
+2. `himalaya.exe` nach `%LOCALAPPDATA%\Programs\himalaya\` legen
+   (der Ordner darf angelegt werden) oder irgendwohin in den `PATH`
+3. `SmartysHimalayaGUI.exe` starten — die Oberfläche führt durch die
+   Kontoeinrichtung
+
+Selbst bauen (auf Windows, PowerShell):
+
+```powershell
+.\packaging\build-windows.ps1
+# -> dist\SmartysHimalayaGUI.exe
+```
+
+Der Build läuft auch automatisch über GitHub Actions, sobald ein Tag
+gesetzt wird — dann hängt die `.exe` am Release.
 
 ### Aus dem Quelltext
 
@@ -157,6 +185,9 @@ Ehrlich benannt, damit niemand Überraschungen erlebt:
 - **Kein Push**: neue Mails erscheinen beim Neuladen, nicht von selbst
 - **Kein Adressbuch, kein Kalender** — dafür gibt es `cardamum` und
   `calendula` aus derselben Schmiede
+- **Windows-Fassung noch ungetestet** — der Code ist plattformunabhängig und
+  der Build läuft automatisch, aber auf einem echten Windows-Rechner hat ihn
+  noch niemand bedient. Rückmeldung willkommen
 
 ## Mitmachen
 

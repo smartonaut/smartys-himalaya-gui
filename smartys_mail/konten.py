@@ -12,7 +12,9 @@ import os
 import re
 import tomllib
 
-CONFIG = os.path.expanduser("~/.config/himalaya/config.toml")
+from . import pfade
+
+CONFIG = pfade.himalaya_config()
 
 # host_imap, port_imap, host_smtp, port_smtp, verschluesselung, hinweis
 ANBIETER = {

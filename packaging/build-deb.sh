@@ -58,16 +58,15 @@ Keywords=mail;email;imap;himalaya;
 StartupWMClass=smartys-himalaya-gui
 EOF
 
-# Symbol: schlichte Sprechblase
-cat > "$WURZEL/usr/share/icons/hicolor/scalable/apps/smartys-himalaya-gui.svg" <<'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <rect width="64" height="64" rx="14" fill="#0b0e14"/>
-  <rect x="10" y="17" width="44" height="30" rx="4" fill="none" stroke="#ffc94d" stroke-width="3"/>
-  <path d="M11 20 L32 36 L53 20" fill="none" stroke="#ffc94d" stroke-width="3" stroke-linecap="round"/>
-  <circle cx="46" cy="45" r="7" fill="#ffc94d"/>
-</svg>
-EOF
+# Symbol: goldener Briefumschlag mit Berg (FLUX-Rendering, alle Groessen)
+for groesse in 16 24 32 48 64 128 256; do
+    mkdir -p "$WURZEL/usr/share/icons/hicolor/${groesse}x${groesse}/apps"
+done
+cp "$HIER/assets/icons/logo_64.png"   "$WURZEL/usr/share/icons/hicolor/64x64/apps/smartys-himalaya-gui.png"
+cp "$HIER/assets/icons/logo_128.png"  "$WURZEL/usr/share/icons/hicolor/128x128/apps/smartys-himalaya-gui.png"
+cp "$HIER/assets/icons/logo_256.png"  "$WURZEL/usr/share/icons/hicolor/256x256/apps/smartys-himalaya-gui.png"
+mkdir -p "$WURZEL/usr/share/icons/hicolor/scalable/apps"
+cp "$HIER/assets/icons/smartys-himalaya-gui.svg" "$WURZEL/usr/share/icons/hicolor/scalable/apps/"
 
 # Systemd-Dienst fuer die Web-Variante
 cat > "$WURZEL/usr/lib/systemd/user/smartys-himalaya-gui-web.service" <<'EOF'
