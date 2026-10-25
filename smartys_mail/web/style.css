@@ -1,66 +1,474 @@
-:root{--bg:#0b0e14;--card:#131a26;--rand:#232c42;--text:#dde4f0;--muted:#8fa0b8;--gold:#ffc94d}
-*{box-sizing:border-box}
-body{margin:0;font:14px/1.5 system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden}
-#app{display:grid;grid-template-columns:230px 360px 1fr;height:100vh}
-.spalte{overflow:auto;border-right:1px solid var(--rand);height:100vh}
-.kopf{padding:12px 14px;border-bottom:1px solid var(--rand);font-weight:600;color:var(--gold);
- display:flex;justify-content:space-between;align-items:center;gap:8px}
-.konto{padding:7px 14px;cursor:pointer;font-size:13px;border-left:3px solid transparent}
-.konto:hover{background:#182233}
-.konto.aktiv{background:#1c2740;border-left-color:var(--gold);color:var(--gold)}
-.ordner{padding:5px 12px 5px 26px;cursor:pointer;font-size:12.5px;color:var(--muted)}
-.ordner:hover{background:#182233;color:var(--text)}
-.ordner.aktiv{color:var(--gold);background:#1c2740}
-.mail{padding:9px 12px;border-bottom:1px solid #1b2333;cursor:pointer}
-.mail:hover{background:#182233}
-.mail.aktiv{background:#1c2740}
-.von{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
-.betreff{font-size:13px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ungelesen .betreff{font-weight:700;color:#fff}
-#lesen{padding:16px 20px;overflow:auto;height:100vh}
-#lesen h2{margin:0 0 6px;font-size:17px}
-.meta{color:var(--muted);font-size:12px;margin-bottom:10px}
-.hinweis{color:var(--muted);padding:20px;font-size:13px}
-#kontenliste{padding:0}
-#konten,#liste{overflow-y:auto}
-input.such{width:100%;padding:8px 12px;background:#0f1520;border:0;border-bottom:1px solid var(--rand);
- color:var(--text);outline:none}
-.knopfleiste{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0;padding-bottom:10px;
- border-bottom:1px solid var(--rand)}
-.knopfleiste button{padding:5px 11px;background:#1c2740;border:1px solid var(--rand);color:var(--text);
- border-radius:4px;font-size:12px;cursor:pointer}
-.knopfleiste button:hover{border-color:var(--gold);color:var(--gold)}
-pre.body{white-space:pre-wrap;word-wrap:break-word;font:13px/1.6 ui-monospace,monospace;margin:0}
-.anhaenge{margin:12px 0;padding:10px;background:#111a27;border:1px solid var(--rand);
- border-radius:5px;font-size:12.5px}
-.anhaenge a{color:var(--gold);text-decoration:none;margin-right:14px}
-.verfassen{margin-top:16px;border-top:1px solid var(--rand);padding-top:12px}
-.verfassen input{width:100%;padding:8px 10px;margin-bottom:7px;background:#0f1520;
- border:1px solid var(--rand);border-radius:4px;color:var(--text);font:13px/1.5 system-ui,sans-serif;outline:none}
-.verfassen input:focus{border-color:var(--gold)}
-.toolbar{display:flex;gap:4px;flex-wrap:wrap;padding:6px;background:#0f1520;
- border:1px solid var(--rand);border-radius:4px 4px 0 0}
-.toolbar button{min-width:30px;height:28px;padding:0 7px;background:#1c2740;border:1px solid var(--rand);
- color:var(--text);border-radius:3px;cursor:pointer;font-size:13px}
-.toolbar button:hover{border-color:var(--gold);color:var(--gold)}
-.toolbar select{background:#1c2740;border:1px solid var(--rand);color:var(--text);border-radius:3px;
- height:28px;font-size:12px}
-.toolbar input[type=color]{width:30px;height:28px;padding:1px;background:#1c2740;
- border:1px solid var(--rand);border-radius:3px;cursor:pointer}
-#editor{min-height:180px;max-height:420px;overflow:auto;padding:12px;background:#fff;color:#111;
- border:1px solid var(--rand);border-top:0;border-radius:0 0 4px 4px;font:14px/1.55 system-ui,sans-serif;outline:none}
-#editor a{color:#0645ad}
-.siggruppe{padding:10px 12px;border:1px solid var(--rand);border-radius:5px;margin-bottom:8px;
- background:#111a27;cursor:pointer}
-.siggruppe:hover{border-color:var(--gold)}
-#signaturEditor{min-height:150px;max-height:320px;overflow:auto;padding:12px;background:#fff;color:#111;
- border:1px solid var(--rand);border-top:0;border-radius:0 0 4px 4px;font:14px/1.55 system-ui,sans-serif;outline:none}
-.senden-zeile{display:flex;gap:10px;align-items:center;margin-top:8px}
-.senden-zeile button{padding:8px 20px;background:var(--gold);color:#1a1206;border:0;border-radius:5px;
- font-weight:600;cursor:pointer}
-.senden-zeile button:disabled{opacity:.5;cursor:default}
-.status{font-size:12px}
-.status.ok{color:#5fd08a}
-.status.fehler{color:#ff7a7a}
-.neu{background:var(--gold);color:#1a1206;border:0;border-radius:4px;padding:5px 12px;
- font-weight:600;font-size:12px;cursor:pointer}
+/* Smartys Himalaya GUI — schlank, ohne Framework.
+   Farben und Abstaende stehen an einer Stelle, damit sich das Bild in
+   Sekunden aendern laesst. */
+
+:root {
+  /* Flaechen */
+  --bg:          #0d1117;
+  --bg-spalte:   #10151c;
+  --bg-karte:    #161b22;
+  --bg-hover:    #1c2430;
+  --bg-aktiv:    #1f2a3a;
+
+  /* Linien */
+  --rand:        #21262d;
+  --rand-hell:   #30363d;
+
+  /* Text */
+  --text:        #e6edf3;
+  --text-leise:  #a3b1c2;
+  --text-sehr-leise: #8290a3;
+
+  /* Akzent */
+  --gold:        #f0b429;
+  --gold-leise:  #3d2f10;
+  --gruen:       #3fb950;
+  --rot:         #f85149;
+
+  --radius:      8px;
+  --radius-klein: 5px;
+  --wechsel:     .14s ease;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font: 14px/1.55 -apple-system, "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ------------------------------------------------------------- Grundriss */
+#app {
+  display: grid;
+  grid-template-columns: 232px 356px 1fr;
+  height: 100vh;
+}
+
+.spalte {
+  overflow: auto;
+  border-right: 1px solid var(--rand);
+  height: 100vh;
+  background: var(--bg-spalte);
+  scrollbar-width: thin;
+  scrollbar-color: var(--rand-hell) transparent;
+}
+.spalte::-webkit-scrollbar { width: 8px; }
+.spalte::-webkit-scrollbar-thumb {
+  background: var(--rand-hell);
+  border-radius: 4px;
+}
+.spalte::-webkit-scrollbar-track { background: transparent; }
+
+.kopf {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--rand);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+  background: var(--bg-spalte);
+  z-index: 5;
+  letter-spacing: .2px;
+}
+
+/* ------------------------------------------------------------- Konten */
+#kontenliste { padding: 6px 0; }
+
+.konto {
+  padding: 7px 14px 7px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-leise);
+  border-left: 2px solid transparent;
+  transition: background var(--wechsel), color var(--wechsel);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.konto:hover { background: var(--bg-hover); color: var(--text); }
+.konto.aktiv {
+  background: var(--bg-aktiv);
+  border-left-color: var(--gold);
+  color: var(--gold);
+  font-weight: 500;
+}
+
+.ordner {
+  padding: 5px 12px 5px 30px;
+  cursor: pointer;
+  font-size: 12.5px;
+  color: var(--text-sehr-leise);
+  transition: background var(--wechsel), color var(--wechsel);
+}
+.ordner:hover { background: var(--bg-hover); color: var(--text); }
+.ordner.aktiv { color: var(--gold); background: var(--bg-aktiv); }
+
+/* ------------------------------------------------------------- Mailliste */
+.mail {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rand);
+  cursor: pointer;
+  transition: background var(--wechsel);
+  position: relative;
+}
+.mail:hover { background: var(--bg-hover); }
+.mail.aktiv { background: var(--bg-aktiv); }
+.mail.aktiv::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--gold);
+}
+
+.von {
+  font-size: 12px;
+  color: var(--text-leise);
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: baseline;
+}
+.von span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.von span:last-child {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-sehr-leise);
+  font-variant-numeric: tabular-nums;
+}
+
+.betreff {
+  font-size: 13px;
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-leise);
+}
+.ungelesen .von span:first-child { color: var(--text); font-weight: 600; }
+.ungelesen .betreff { font-weight: 600; color: var(--text); }
+.ungelesen::after {
+  content: "";
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+.ungelesen .von span:last-child { margin-right: 14px; }
+
+/* ------------------------------------------------------------- Lesebereich */
+#lesen {
+  padding: 22px 28px;
+  overflow: auto;
+  height: 100vh;
+  background: var(--bg);
+  scrollbar-width: thin;
+  scrollbar-color: var(--rand-hell) transparent;
+}
+#lesen::-webkit-scrollbar { width: 10px; }
+#lesen::-webkit-scrollbar-thumb {
+  background: var(--rand-hell);
+  border-radius: 5px;
+}
+
+#lesen h2 {
+  margin: 0 0 8px;
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -.2px;
+}
+
+.meta {
+  color: var(--text-leise);
+  font-size: 12.5px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--rand);
+}
+
+.hinweis {
+  color: var(--text-leise);
+  padding: 20px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+pre.body {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font: 13.5px/1.7 ui-monospace, "JetBrains Mono", monospace;
+  margin: 0;
+  color: #c9d1d9;
+  max-width: 78ch;
+}
+
+/* ------------------------------------------------------------- Suchfeld */
+input.such {
+  width: calc(100% - 20px);
+  margin: 8px 10px;
+  padding: 9px 12px 9px 32px;
+  background: var(--bg-karte) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238290a3' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 10px center;
+  background-size: 15px;
+  border: 1px solid var(--rand-hell);
+  border-radius: 6px;
+  color: var(--text);
+  outline: none;
+  font-size: 13px;
+  transition: background var(--wechsel);
+  font-family: inherit;
+}
+input.such::placeholder { color: var(--text-sehr-leise); }
+input.such:focus { background: var(--bg-karte); }
+
+/* ------------------------------------------------------------- Knopfleiste */
+.knopfleiste {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 14px 0;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--rand);
+}
+
+.knopfleiste button,
+.toolbar button {
+  padding: 6px 12px;
+  background: var(--bg-karte);
+  border: 1px solid var(--rand-hell);
+  color: var(--text-leise);
+  border-radius: var(--radius-klein);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all var(--wechsel);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: inherit;
+}
+.knopfleiste button:hover,
+.toolbar button:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: var(--gold-leise);
+}
+.knopfleiste button:active,
+.toolbar button:active { transform: translateY(1px); }
+
+/* ------------------------------------------------------------- Anhaenge */
+.anhaenge {
+  margin: 14px 0;
+  padding: 12px 14px;
+  background: var(--bg-karte);
+  border: 1px solid var(--rand);
+  border-radius: var(--radius);
+  font-size: 12.5px;
+}
+.anhaenge b {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-leise);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.anhaenge a {
+  color: var(--gold);
+  text-decoration: none;
+  margin-right: 14px;
+  padding: 2px 0;
+  border-bottom: 1px dotted transparent;
+  transition: border-color var(--wechsel);
+}
+.anhaenge a:hover { border-bottom-color: var(--gold); }
+
+/* ------------------------------------------------------------- Verfassen */
+.verfassen {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rand);
+  max-width: 900px;
+}
+
+.verfassen input {
+  width: 100%;
+  padding: 9px 12px;
+  margin-bottom: 8px;
+  background: var(--bg-karte);
+  border: 1px solid var(--rand-hell);
+  border-radius: var(--radius-klein);
+  color: var(--text);
+  font: 13px/1.5 -apple-system, "Segoe UI", system-ui, sans-serif;
+  outline: none;
+  transition: border-color var(--wechsel), background var(--wechsel);
+}
+.verfassen input::placeholder { color: var(--text-sehr-leise); }
+.verfassen input:focus {
+  border-color: var(--gold);
+  background: var(--bg-hover);
+}
+
+.toolbar {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding: 7px;
+  background: var(--bg-karte);
+  border: 1px solid var(--rand-hell);
+  border-radius: var(--radius) var(--radius) 0 0;
+  align-items: center;
+}
+
+.toolbar button {
+  min-width: 30px;
+  height: 28px;
+  padding: 0 8px;
+  justify-content: center;
+  font-size: 13px;
+}
+.toolbar select {
+  background: var(--bg-hover);
+  border: 1px solid var(--rand-hell);
+  color: var(--text);
+  border-radius: 4px;
+  height: 28px;
+  font-size: 12px;
+  padding: 0 6px;
+  cursor: pointer;
+  outline: none;
+}
+.toolbar select:hover { border-color: var(--gold); }
+.toolbar input[type=color] {
+  width: 30px; height: 28px;
+  padding: 2px;
+  background: var(--bg-hover);
+  border: 1px solid var(--rand-hell);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.toolbar input[type=color]:hover { border-color: var(--gold); }
+
+#editor, #signaturEditor {
+  min-height: 190px;
+  max-height: 420px;
+  overflow: auto;
+  padding: 14px 16px;
+  background: #ffffff;
+  color: #1a1a1a;
+  border: 1px solid var(--rand-hell);
+  border-top: 0;
+  border-radius: 0 0 var(--radius) var(--radius);
+  font: 14px/1.6 -apple-system, "Segoe UI", system-ui, sans-serif;
+  outline: none;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .06);
+}
+#signaturEditor { min-height: 150px; max-height: 320px; }
+#editor a, #signaturEditor a { color: #0550ae; }
+#editor:focus, #signaturEditor:focus {
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.06), 0 0 0 2px rgba(240,180,41,.25);
+}
+
+/* ------------------------------------------------------------- Senden */
+.senden-zeile {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.senden-zeile button {
+  padding: 9px 22px;
+  background: var(--gold);
+  color: #1a1206;
+  border: 0;
+  border-radius: var(--radius-klein);
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: all var(--wechsel);
+  font-family: inherit;
+}
+.senden-zeile button:hover:not(:disabled) {
+  background: #ffc94d;
+  box-shadow: 0 2px 12px rgba(240, 180, 41, .3);
+}
+.senden-zeile button:active:not(:disabled) { transform: translateY(1px); }
+.senden-zeile button:disabled {
+  opacity: .45;
+  cursor: default;
+  box-shadow: none;
+}
+
+.status { font-size: 12.5px; }
+.status.ok { color: var(--gruen); }
+.status.fehler { color: var(--rot); }
+
+/* ------------------------------------------------------------- Kleinkram */
+.neu {
+  background: var(--gold);
+  color: #1a1206;
+  border: 0;
+  border-radius: var(--radius-klein);
+  padding: 6px 13px;
+  font-weight: 600;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all var(--wechsel);
+  font-family: inherit;
+  white-space: nowrap;
+}
+.neu:hover {
+  background: #ffc94d;
+  box-shadow: 0 2px 10px rgba(240, 180, 41, .25);
+}
+.neu:active { transform: translateY(1px); }
+
+.siggruppe {
+  padding: 12px 14px;
+  border: 1px solid var(--rand);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  background: var(--bg-karte);
+  cursor: pointer;
+  transition: all var(--wechsel);
+}
+.siggruppe:hover {
+  border-color: var(--gold);
+  background: var(--bg-hover);
+  transform: translateX(2px);
+}
+
+/* Leerzustaende freundlicher */
+.hinweis:only-child {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  color: var(--text-sehr-leise);
+  font-size: 13.5px;
+}
+
+details summary { transition: color var(--wechsel); }
+details summary:hover { color: var(--gold); }
+
+/* Kontenname und Standard-Stern */
+.kontoname { display: inline-block; max-width: 170px; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+.standard { float: right; color: var(--gold); font-size: 11px; opacity: .8; }

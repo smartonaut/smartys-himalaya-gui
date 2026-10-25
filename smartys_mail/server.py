@@ -94,6 +94,14 @@ class Handler(BaseHTTPRequestHandler):
         box = d.get("mailbox") or "Inbox"
         if not (konto and mid):
             return self._json({"error": "Konto und Mail noetig"})
+        # gelesen=true setzt "seen" gezielt (beim Oeffnen einer Mail).
+        # Ohne die Angabe wird umgeschaltet (Knopf in der Oberflaeche).
+        if d.get("gelesen"):
+            antwort = himalaya.json_aufruf(
+                ["flag", "add", "-a", konto, "-m", box, "seen", mid])
+            if "error" in antwort:
+                return self._json(antwort)
+            return self._json({"ok": True, "gelesen": True})
         antwort = himalaya.json_aufruf(["flag", "add", "-a", konto, "-m", box, "seen", mid])
         if "error" in antwort:
             antwort = himalaya.json_aufruf(["flag", "remove", "-a", konto, "-m", box, "seen", mid])

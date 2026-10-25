@@ -10,7 +10,8 @@ async function ladeKonten(){
   (d.accounts||[]).forEach(a=>{
     const div=document.createElement('div');
     div.className='konto';div.dataset.name=a.name;
-    div.textContent=a.name+(a.default?' •':'');
+    div.innerHTML='<span class="kontoname">'+esc(a.name)+'</span>'+
+      (a.default?'<span class="standard" title="Standardkonto">★</span>':'');
     div.onclick=()=>waehleKonto(a.name,div);
     el.appendChild(div);
   });
@@ -100,7 +101,7 @@ async function waehleKonto(name,el){
   boxen.forEach(b=>{
     const o=document.createElement('div');
     o.className='ordner'+(b.name===ordner?' aktiv':'');
-    o.textContent=b.name;
+    o.textContent=ordnerName(b.name);
     o.onclick=()=>{document.querySelectorAll('.ordner').forEach(x=>x.classList.remove('aktiv'));
                    o.classList.add('aktiv');ordner=b.name;ladeListe();};
     block.appendChild(o);
@@ -119,12 +120,41 @@ async function ladeListe(){
   if(!(d.envelopes||[]).length)
     box.insertAdjacentHTML('beforeend','<div class="hinweis ladehinweis">Keine Nachrichten</div>');
 }
+const ORDNER_DE={'inbox':'Posteingang','sent':'Gesendet','sent items':'Gesendet',
+ 'sent messages':'Gesendet','drafts':'Entwürfe','trash':'Papierkorb',
+ 'deleted items':'Papierkorb','junk':'Spam','junk mail':'Spam','spam':'Spam',
+ 'archive':'Archiv','archives':'Archiv','outbox':'Postausgang'};
+function ordnerName(name){return ORDNER_DE[(name||'').toLowerCase()]||name}
+function zeitKurz(iso){
+  const d=new Date(iso);
+  if(isNaN(d))return (iso||'').slice(11,16);
+  const jetzt=new Date();
+  const gleichTag=d.toDateString()===jetzt.toDateString();
+  const gestern=new Date(jetzt); gestern.setDate(jetzt.getDate()-1);
+  if(gleichTag)return d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  if(d.toDateString()===gestern.toDateString())return 'gestern';
+  if(jetzt-d<6*86400000)return d.toLocaleDateString('de-DE',{weekday:'short'})+'.';
+  return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'});
+}
+function zeitLang(iso){
+  const d=new Date(iso);
+  if(isNaN(d))return iso||'';
+  return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})+
+         ', '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr';
+}
+function initialen(name){
+  const sauber=(name||'?').replace(/["'<>,]/g,'').trim();
+  const teile=sauber.split(/[\s.@_-]+/).filter(Boolean);
+  if(!teile.length)return '?';
+  if(teile.length===1)return teile[0].slice(0,1).toUpperCase();
+  return (teile[0][0]+teile[1][0]).toUpperCase();
+}
 function mailZeile(e){
   const f=(e.from&&e.from[0])?((e.from[0].name||'')||e.from[0].email||''):'';
   const div=document.createElement('div');
   div.className='mail'+((e.flags||[]).length?'':' ungelesen');
   div.innerHTML='<div class="von"><span>'+esc(f)+'</span><span>'+
-    esc((e.date||'').slice(0,16).replace('T',' '))+'</span></div>'+
+    esc(zeitKurz(e.date))+'</span></div>'+
     '<div class="betreff">'+esc(e.subject||'(ohne Betreff)')+'</div>';
   div.onclick=()=>lese(e.id,div,e);
   return div;
@@ -141,7 +171,7 @@ async function lese(id,el,env){
   // Betreff/Absender aus der Liste als Rueckfall: die Lese-API liefert sie
   // gelegentlich nicht (anderer Ordnername, exotische Mail).
   const envBetreff=(env&&env.subject)||'';
-  const envVon=(env&&env.from&&env.from[0])?((env.from[0].name||'')+' <'+(env.from[0].email||'')+'>'):'';
+  const envVon=(env&&env.from&&env.from[0])?(env.from[0].name?env.from[0].name+(env.from[0].email?' <'+env.from[0].email+'>':''):(env.from[0].email||'')):'';
   const betreff=d.subject||envBetreff||'';
   const von=d.from||envVon||'';
   let anhangHtml='';
@@ -152,17 +182,23 @@ async function lese(id,el,env){
         esc(a.name||('Anhang '+(i+1)))+'</a>').join('')+'</div>';
   }
   box.innerHTML='<h2>'+esc(betreff||'(ohne Betreff)')+'</h2>'+
-    '<div class="meta">'+esc(von+'  ·  '+(d.date||''))+'</div>'+
+    '<div class="meta">'+esc(von)+'  ·  '+esc(zeitLang(d.date))+'</div>'+
     anhangHtml+
     '<div class="knopfleiste">'+
-      '<button onclick="antworten()">Antworten</button>'+
-      '<button onclick="weiterleiten()">Weiterleiten</button>'+
-      '<button onclick="alsGelesen()">Gelesen/ungelesen</button>'+
-      '<button onclick="loeschen()">Löschen</button>'+
+      '<button onclick="antworten()" title="Antworten (A)">\u21a9 Antworten</button>'+
+      '<button onclick="weiterleiten()" title="Weiterleiten (W)">\u21aa Weiterleiten</button>'+
+      '<button onclick="alsGelesen()" title="Als gelesen oder ungelesen markieren">\u25cf Gelesen</button>'+
+      '<button onclick="loeschen()" title="In den Papierkorb (Entf)">\u2715 Löschen</button>'+
     '</div>'+
     '<pre class="body">'+esc(d.body||'')+'</pre>'+
     '<div id="editorbereich"></div>';
   window._letzte={subject:betreff, from:von, date:d.date||'', body:d.body||''};
+  // Gelesene Nachricht nicht weiter als ungelesen anzeigen
+  if(el&&el.classList.contains('ungelesen')){
+    el.classList.remove('ungelesen');
+    fetch('/api/flag',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({account:konto,id:id,mailbox:ordner,gelesen:true})}).catch(()=>{});
+  }
 }
 function editorHtml(){
   return '<div class="verfassen">'+
