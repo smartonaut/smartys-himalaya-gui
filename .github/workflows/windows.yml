@@ -1,7 +1,9 @@
-name: Windows-Fassung bauen
+name: Windows-Programm und Installer bauen
 
-# Baut bei jedem Tag und auf Zuruf eine .exe auf einem echten Windows-Runner.
-# Cross-Compiling von Linux aus gibt es fuer PyInstaller nicht — deshalb hier.
+# Baut bei jedem Tag und auf Zuruf auf einem Windows-Runner: erst das
+# Programm (.exe), dann einen richtigen Installer (.exe-Setup) mit
+# Startmenue-Eintrag, Deinstallation und allem, was zum Laufen noetig ist.
+# PyInstaller kann nicht von Linux aus fuer Windows bauen — deshalb hier.
 
 on:
   push:
@@ -23,27 +25,83 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install pyinstaller pywebview
 
-      - name: Bauen
+      - name: Programm bauen
         run: python -m PyInstaller --noconfirm --clean packaging/smartys-himalaya-gui.spec
 
-      - name: Pruefen, dass die .exe entstanden ist
+      - name: himalaya dazulegen
+        shell: pwsh
+        run: |
+          # Ohne himalaya findet die App kein Konto. Es gehoert in den
+          # Installer, damit niemand erst ein Rust-Binary suchen muss.
+          $url = "https://github.com/pimalaya/himalaya/releases/latest/download/himalaya.x86_64-windows.zip"
+          New-Item -ItemType Directory -Force -Path build/windows | Out-Null
+          Invoke-WebRequest -Uri $url -OutFile build/windows/himalaya.zip -UseBasicParsing
+          Expand-Archive -Path build/windows/himalaya.zip -DestinationPath build/windows/entpackt -Force
+          $exe = Get-ChildItem -Path build/windows/entpackt -Filter himalaya.exe -Recurse | Select-Object -First 1
+          if (-not $exe) { throw "himalaya.exe nicht im Archiv gefunden" }
+          Copy-Item $exe.FullName build/windows/himalaya.exe -Force
+          $mb = [math]::Round((Get-Item build/windows/himalaya.exe).Length / 1MB, 1)
+          Write-Host "himalaya.exe bereit: $mb MB"
+          & build/windows/himalaya.exe --version
+
+      - name: Pruefen, dass das Programm startet
         shell: pwsh
         run: |
           $exe = "dist/SmartysHimalayaGUI.exe"
-          if (-not (Test-Path $exe)) { throw "Build ohne Ergebnis" }
+          if (-not (Test-Path $exe)) { throw "Programm wurde nicht gebaut" }
           $mb = [math]::Round((Get-Item $exe).Length / 1MB, 1)
-          Write-Host "Groesse: $mb MB"
+          Write-Host "SmartysHimalayaGUI.exe: $mb MB"
+          # Ein echter Start deckt fehlende Module auf, die PyInstaller nicht
+          # gemeldet hat — besser hier als beim Nutzer.
+          $p = Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 25
+          if ($p.HasExited) {
+            Write-Host "Programm hat sich beendet (Exit $($p.ExitCode))"
+            if ($p.ExitCode -ne 0) { throw "Programm startet nicht (Exit $($p.ExitCode))" }
+          } else {
+            Write-Host "Programm laeuft (PID $($p.Id))"
+            Stop-Process -Id $p.Id -Force
+          }
+
+      - name: Inno Setup bereitstellen
+        shell: pwsh
+        run: |
+          choco install innosetup --yes --no-progress
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe nicht gefunden" }
+          Write-Host "Inno Setup bereit"
+
+      - name: Installer bauen
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          $version = "${{ github.ref_name }}" -replace '^v', ''
+          if (-not $version -or $version -eq "master") { $version = "0.1.0" }
+          & $iscc "/DPROJEKT=$PWD" "/DVERSION=$version" packaging/windows-installer.iss
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup fehlgeschlagen" }
+
+      - name: Installer pruefen
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem dist/*Setup.exe | Select-Object -First 1
+          if (-not $setup) { throw "Kein Installer entstanden" }
+          $mb = [math]::Round($setup.Length / 1MB, 1)
+          Write-Host "Installer: $($setup.Name) ($mb MB)"
+          # Eine winzige Datei deutet auf einen stillen Fehlschlag hin
+          if ($setup.Length -lt 10MB) { throw "Installer ist zu klein ($mb MB)" }
 
       - name: Als Artefakt ablegen
         uses: actions/upload-artifact@v4
         with:
-          name: SmartysHimalayaGUI-windows
-          path: dist/SmartysHimalayaGUI.exe
+          name: SmartysHimalayaGUI-windows-installer
+          path: |
+            dist/*Setup.exe
+            dist/SmartysHimalayaGUI.exe
           if-no-files-found: error
 
       - name: An das Release anhaengen
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/SmartysHimalayaGUI.exe
+          files: dist/*Setup.exe
           fail_on_unmatched_files: true
