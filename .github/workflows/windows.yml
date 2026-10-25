@@ -10,6 +10,12 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 
+# Ohne das hier darf der Lauf keine Release-Anhaenge anlegen:
+# "Resource not accessible by integration" (HTTP 403). Der GITHUB_TOKEN ist
+# standardmaessig nur lesend.
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
