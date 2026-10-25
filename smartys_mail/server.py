@@ -361,7 +361,11 @@ class Handler(BaseHTTPRequestHandler):
                            # HTML-Fassung fuer die Anzeige. Fehlt sie,
                            # zeigt die Oberflaeche den Text — nie beides
                            # untereinander, das doppelt den Inhalt.
-                           "body_html": mail_html(roh)})
+                           "body_html": mail_html(roh),
+                           # Die Oberflaeche entscheidet anhand dieser
+                           # Einstellung, ob sie externe Bilder sperrt.
+                           "bilder_laden": bool(
+                               verbindung.laden().get("bilder_laden"))})
 
     def _anhang(self, w):
         konto, mid = w("account"), w("id")
