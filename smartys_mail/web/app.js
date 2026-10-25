@@ -1,6 +1,53 @@
 let konto=null, ordner='INBOX', mail=null, signaturCache=null;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 async function hole(u){const r=await fetch(u);return r.json()}
+async function verbindungEditor(){
+  const box=document.getElementById('lesen');
+  const v=await hole('/api/verbindung');
+  const ssh=v.modus==='ssh';
+  box.innerHTML='<h2>Wo läuft himalaya?</h2>'+
+    '<div class="hinweis" style="padding:0 0 14px">Die Oberfläche kann himalaya auf diesem '+
+    'Rechner benutzen — oder auf einem anderen, auf dem deine Postfächer eingerichtet sind. '+
+    'Im zweiten Fall bleiben die Zugangsdaten dort, und hier wird nur ein SSH-Zugang gebraucht.</div>'+
+    '<div class="verfassen" style="border-top:0;padding-top:0;max-width:560px">'+
+      '<label style="display:block;margin-bottom:6px;color:#a3b1c2;font-size:12.5px">'+
+        '<input type="radio" name="vmodus" value="lokal" '+(ssh?'':'checked')+'> Auf diesem Rechner</label>'+
+      '<label style="display:block;margin-bottom:12px;color:#a3b1c2;font-size:12.5px">'+
+        '<input type="radio" name="vmodus" value="ssh" '+(ssh?'checked':'')+'> Auf einem anderen Rechner (SSH)</label>'+
+      '<div id="sshFelder" style="display:'+(ssh?'block':'none')+'">'+
+        '<input id="vZiel" placeholder="benutzer@rechner, z.B. smarty@192.168.1.238" value="'+esc(v.ssh_ziel||'')+'">'+
+        '<input id="vPfad" placeholder="Pfad zu himalaya dort (Standard: himalaya)" value="'+esc(v.himalaya_pfad||'himalaya')+'">'+
+        '<div class="hinweis" style="padding:6px 0 10px;font-size:12px">Der öffentliche SSH-Schlüssel '+
+          'dieses Rechners muss dort hinterlegt sein — sonst kommt keine Verbindung zustande.</div>'+
+      '</div>'+
+      '<div class="senden-zeile"><button id="vSpeichern" onclick="verbindungSpeichern()">Speichern und prüfen</button>'+
+        '<span class="status" id="vStatus"></span></div>'+
+    '</div>';
+  document.querySelectorAll('input[name=vmodus]').forEach(r=>{
+    r.onchange=()=>{document.getElementById('sshFelder').style.display=
+      (r.value==='ssh'&&r.checked)?'block':'none'};
+  });
+}
+async function verbindungSpeichern(){
+  const st=document.getElementById('vStatus'),bt=document.getElementById('vSpeichern');
+  const modus=document.querySelector('input[name=vmodus]:checked').value;
+  bt.disabled=true;st.className='status';st.textContent='prüfe…';
+  const r=await fetch('/api/verbindung',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({modus:modus,
+      ssh_ziel:document.getElementById('vZiel')?.value.trim()||'',
+      himalaya_pfad:document.getElementById('vPfad')?.value.trim()||'himalaya'})});
+  const d=await r.json();
+  bt.disabled=false;
+  if(d.error){st.className='status fehler';st.textContent=d.error;return}
+  if(d.erreichbar){
+    st.className='status ok';
+    st.textContent='Verbunden — '+d.konten+' Konto'+(d.konten===1?'':'en')+' gefunden. Lade neu…';
+    setTimeout(()=>{document.getElementById('kontenliste').innerHTML='lade…';ladeKonten()},1200);
+  }else{
+    st.className='status fehler';
+    st.textContent='Gespeichert, aber keine Verbindung: '+d.meldung;
+  }
+}
 async function ladeKonten(){
   const d=await hole('/api/accounts');
   const el=document.getElementById('kontenliste');
