@@ -75,6 +75,16 @@ def himalaya_binary():
         return gefunden
 
     kandidaten = []
+    # Neben dem Programm selbst nachsehen: der Windows-Installer legt
+    # himalaya.exe mit ins Programmverzeichnis, damit der Nutzer nichts
+    # nachinstallieren muss. Ohne diesen Punkt waere die mitgelieferte
+    # Datei fuer die App unsichtbar.
+    if getattr(sys, "frozen", False):
+        eigene_exe = os.path.dirname(os.path.abspath(sys.executable))
+        kandidaten += [
+            os.path.join(eigene_exe, name),
+            os.path.join(eigene_exe, "himalaya", name),
+        ]
     if WINDOWS:
         lokal = os.environ.get("LOCALAPPDATA") or ""
         kandidaten = [
