@@ -1,7 +1,7 @@
 ; Inno-Setup-Skript fuer die Windows-Fassung.
 ;
 ; Ergebnis: ein Installer, der sich wie ein normales Windows-Programm
-; verhaelt — Startmenue-Eintrag, Eintrag in "Apps & Features", Deinstallation,
+; verhaelt - Startmenue-Eintrag, Eintrag in "Apps & Features", Deinstallation,
 ; Icon. Alles Noetige ist enthalten (Python steckt in der .exe, himalaya liegt
 ; daneben), der Nutzer muss nichts nachinstallieren.
 ;
@@ -44,7 +44,7 @@ SolidCompression=yes
 WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
-; Die App laeuft nur mit Edge WebView2 — unter Windows 10/11 vorinstalliert.
+; Die App laeuft nur mit Edge WebView2 - unter Windows 10/11 vorinstalliert.
 LicenseFile={#PROJEKT}\LICENSE
 MinVersion=10.0
 
@@ -55,7 +55,7 @@ Name: "deutsch"; MessagesFile: "compiler:Languages\German.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-; Die Anwendung selbst — Python und alle Module stecken darin
+; Die Anwendung selbst - Python und alle Module stecken darin
 Source: "{#PROJEKT}\dist\{#APPEXE}"; DestDir: "{app}"; Flags: ignoreversion
 ; himalaya mitliefern: sonst muesste jeder Nutzer erst ein Rust-Binary
 ; herunterladen und ablegen, bevor die App ein Konto findet.
@@ -74,6 +74,6 @@ Filename: "{app}\{#APPEXE}"; Description: "{cm:LaunchProgram,{#APPNAME}}"; Flags
 
 [UninstallDelete]
 ; Der Programmordner geht restlos weg; Einstellungen und Postfach-Daten
-; liegen in %APPDATA% und bleiben bewusst stehen — wer neu installiert,
+; liegen in %APPDATA% und bleiben bewusst stehen - wer neu installiert,
 ; findet seine Konten wieder.
 Type: filesandordirs; Name: "{app}"
