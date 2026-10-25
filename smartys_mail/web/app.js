@@ -136,6 +136,29 @@ function zeitKurz(iso){
   if(jetzt-d<6*86400000)return d.toLocaleDateString('de-DE',{weekday:'short'})+'.';
   return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'});
 }
+function absenderKopf(von){
+  // "Anna Berger <a@b.de>" -> Name fett, Adresse in Monospace, per Klick kopierbar.
+  // Wer eine Mail prueft, will oft genau diese Adresse weiterverwenden.
+  const m=(von||'').match(/^\s*(.*?)\s*<([^>]+)>\s*$/);
+  const name=m?m[1].trim():'';
+  const adresse=m?m[2].trim():(von||'').trim();
+  if(!adresse)return '<span class="kopf-name">'+esc(von||'')+'</span>';
+  return (name?'<span class="kopf-name">'+esc(name)+'</span> ':'')+
+    '<span class="kopf-adresse" title="Adresse kopieren" '+
+    'onclick="adresseKopieren(this)">'+esc(adresse)+'</span>';
+}
+function adresseKopieren(el){
+  const text=el.textContent;
+  const fertig=()=>{const alt=el.textContent;el.textContent='kopiert';el.classList.add('kopiert');
+    setTimeout(()=>{el.textContent=alt;el.classList.remove('kopiert')},1100)};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(fertig).catch(()=>{});
+  }else{
+    const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);
+    t.select();try{document.execCommand('copy');fertig()}catch(e){}
+    document.body.removeChild(t);
+  }
+}
 function zeitLang(iso){
   const d=new Date(iso);
   if(isNaN(d))return iso||'';
@@ -150,11 +173,18 @@ function initialen(name){
   return (teile[0][0]+teile[1][0]).toUpperCase();
 }
 function mailZeile(e){
-  const f=(e.from&&e.from[0])?((e.from[0].name||'')||e.from[0].email||''):'';
+  const abs=(e.from&&e.from[0])||{};
+  const name=(abs.name||'').trim();
+  const adresse=(abs.email||'').trim();
+  // Zur Spam-Erkennung gehoert die echte Adresse, nicht nur der Anzeigename:
+  // jeder kann sich "Sparkasse" nennen. Steht ein Name da, wird die Adresse
+  // darunter gezeigt; ohne Namen ist sie selbst die erste Zeile.
+  const oben=name||adresse||'(unbekannt)';
   const div=document.createElement('div');
   div.className='mail'+((e.flags||[]).length?'':' ungelesen');
-  div.innerHTML='<div class="von"><span>'+esc(f)+'</span><span>'+
-    esc(zeitKurz(e.date))+'</span></div>'+
+  div.innerHTML='<div class="von"><span title="'+esc(oben)+'">'+esc(oben)+'</span>'+
+      '<span>'+esc(zeitKurz(e.date))+'</span></div>'+
+    (name&&adresse?'<div class="adresse" title="'+esc(adresse)+'">'+esc(adresse)+'</div>':'')+
     '<div class="betreff">'+esc(e.subject||'(ohne Betreff)')+'</div>';
   div.onclick=()=>lese(e.id,div,e);
   return div;
@@ -182,7 +212,7 @@ async function lese(id,el,env){
         esc(a.name||('Anhang '+(i+1)))+'</a>').join('')+'</div>';
   }
   box.innerHTML='<h2>'+esc(betreff||'(ohne Betreff)')+'</h2>'+
-    '<div class="meta">'+esc(von)+'  ·  '+esc(zeitLang(d.date))+'</div>'+
+    '<div class="meta">'+absenderKopf(von)+'  ·  '+esc(zeitLang(d.date))+'</div>'+
     anhangHtml+
     '<div class="knopfleiste">'+
       '<button onclick="antworten()" title="Antworten (A)">\u21a9 Antworten</button>'+

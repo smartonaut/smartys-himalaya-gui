@@ -472,3 +472,40 @@ details summary:hover { color: var(--gold); }
 .kontoname { display: inline-block; max-width: 170px; overflow: hidden;
   text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
 .standard { float: right; color: var(--gold); font-size: 11px; opacity: .8; }
+
+/* Absenderadresse: wichtig zur Spam-Erkennung, deshalb immer sichtbar,
+   aber leiser als der Name — sie soll da sein, nicht dominieren. */
+.adresse {
+  font-size: 11px;
+  color: var(--text-sehr-leise);
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, "SF Mono", monospace;
+  letter-spacing: -.1px;
+}
+.ungelesen .adresse { color: #94a3b8; }
+.mail { padding-top: 9px; padding-bottom: 9px; }
+
+/* Mailkopf: Name und Adresse getrennt, Adresse anklickbar */
+.kopf-name { color: var(--text); font-weight: 600; }
+.kopf-adresse {
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 12px;
+  color: var(--text-leise);
+  cursor: pointer;
+  padding: 1px 5px;
+  border-radius: 3px;
+  transition: all var(--wechsel);
+  border-bottom: 1px dotted var(--rand-hell);
+}
+.kopf-adresse:hover { color: var(--gold); border-bottom-color: var(--gold); background: var(--gold-leise); }
+.kopf-adresse.kopiert { color: var(--gruen); border-bottom-color: var(--gruen); }
+
+/* Drei Zeilen pro Eintrag: Abstaende straffen, damit trotzdem viele
+   Nachrichten in die Spalte passen. */
+.mail { padding: 8px 14px 9px; }
+.mail .von { line-height: 1.35; }
+.mail .adresse { margin-top: 0; line-height: 1.3; }
+.mail .betreff { margin-top: 1px; line-height: 1.4; }
