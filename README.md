@@ -124,7 +124,7 @@ Clients muss auf dem Zielrechner in `~/.ssh/authorized_keys` liegen.
 
 ```
 Modus:      Auf einem anderen Rechner (SSH)
-Rechner:    benutzer@192.168.1.238
+Rechner:    benutzer@192.168.1.50
 himalaya:   himalaya        (oder /home/benutzer/.local/bin/himalaya)
 ```
 

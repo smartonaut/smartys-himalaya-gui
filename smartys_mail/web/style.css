@@ -510,12 +510,24 @@ details summary:hover { color: var(--gold); }
 .mail .adresse { margin-top: 0; line-height: 1.3; }
 .mail .betreff { margin-top: 1px; line-height: 1.4; }
 
-/* Markenzeichen im Konten-Kopf: klein genug, um keinen Platz zu kosten,
-   gross genug, um die App sofort als Smartys-App zu erkennen. */
-.kopf .marke{
-  width:22px;height:22px;border-radius:5px;flex:0 0 auto;
-  margin-right:7px;vertical-align:-5px;
-  box-shadow:0 0 0 1px var(--rand);
+/* Markenzeichen im Konten-Kopf. Bewusst praesent: das Logo ist das
+   Erkennungszeichen der App, kein Beiwerk neben dem Wort "Konten". */
+.kopf{
+  display:flex;align-items:center;
+  padding-bottom:12px;margin-bottom:6px;
+  border-bottom:1px solid var(--rand);
 }
-.kopf{display:flex;align-items:center}
-.kopf .markentext{flex:1 1 auto}
+.kopf .marke{
+  width:34px;height:34px;border-radius:8px;flex:0 0 auto;
+  margin-right:10px;
+  /* Ohne das rendert der Browser das 256er-Bild hart herunter und die
+     Kanten franzen. */
+  image-rendering:-webkit-optimize-contrast;
+  box-shadow:0 2px 8px rgba(0,0,0,.45), 0 0 0 1px rgba(240,180,41,.22);
+}
+.kopf .markentext{
+  flex:1 1 auto;
+  font-size:13px;font-weight:600;letter-spacing:.3px;
+  color:var(--text);
+}
+.kopf > span{display:flex;gap:4px;align-items:center}
