@@ -25,12 +25,21 @@ STANDARD = {
 
 
 def _datei():
+    return os.path.join(pfade.einstellordner(), "verbindung.json")
+
+
+def _alte_datei():
+    """Frueher lag die Einstellung im Cache-Ordner — dort wird sie irgendwann
+    geloescht. Zum Umzug einmal nachsehen."""
     return os.path.join(pfade.datenordner(), "verbindung.json")
 
 
 def laden():
     """Einstellung lesen; bei fehlender oder kaputter Datei die Standardwerte."""
     daten = dict(STANDARD)
+    # Liegt die Einstellung noch am alten Ort (Cache), einmal herueberholen.
+    if not os.path.exists(_datei()):
+        umziehen()
     try:
         with open(_datei(), encoding="utf-8") as f:
             gespeichert = json.load(f)
@@ -49,6 +58,24 @@ def laden():
     if env_pfad:
         daten["himalaya_pfad"] = env_pfad
     return daten
+
+
+def umziehen():
+    """Einstellung aus dem alten Cache-Ort uebernehmen, falls vorhanden."""
+    alt = _alte_datei()
+    if not os.path.exists(alt) or os.path.exists(_datei()):
+        return False
+    try:
+        with open(alt, encoding="utf-8") as f:
+            daten = json.load(f)
+        if isinstance(daten, dict) and daten.get("modus"):
+            os.makedirs(os.path.dirname(_datei()), exist_ok=True)
+            with open(_datei(), "w", encoding="utf-8") as f:
+                json.dump(daten, f, indent=2, ensure_ascii=False)
+            return True
+    except (OSError, json.JSONDecodeError):
+        pass
+    return False
 
 
 def speichern(daten):

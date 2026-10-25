@@ -42,6 +42,27 @@ def datenordner():
     return ordner
 
 
+def einstellordner():
+    """Ordner fuer Einstellungen.
+
+    Bewusst NICHT der Cache-Ordner: Einstellungen muessen einen Cache-
+    Aufraeumer ueberleben. Unter Windows ist %APPDATA% der richtige Ort
+    (roaming), unter Linux XDG_CONFIG_HOME.
+    """
+    eigene = os.environ.get("SMARTYS_MAIL_EINSTELLUNGEN")
+    if eigene:
+        ordner = os.path.expanduser(eigene)
+    elif WINDOWS:
+        basis = os.environ.get("APPDATA") or os.path.expanduser("~")
+        ordner = os.path.join(basis, "smartys-himalaya-gui")
+    else:
+        xdg = os.environ.get("XDG_CONFIG_HOME")
+        basis = xdg if xdg else os.path.expanduser("~/.config")
+        ordner = os.path.join(basis, "smartys-himalaya-gui")
+    os.makedirs(ordner, exist_ok=True)
+    return ordner
+
+
 def himalaya_binary():
     """himalaya finden: Umgebungsvariable, PATH, dann uebliche Orte."""
     eigene = os.environ.get("SMARTYS_MAIL_HIMALAYA")
