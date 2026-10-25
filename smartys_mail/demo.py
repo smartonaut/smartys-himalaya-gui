@@ -24,6 +24,11 @@ _MAILS = {
          "inklusive Wartungspaket. Die Lieferzeit beträgt acht Werktage.\n\n"
          "Für Rückfragen stehe ich gern zur Verfügung.\n\nMit freundlichen Grüßen\n"
          "Anna Berger\nBeispiel GmbH"),
+        (199, "Marktplatz Nord", "versand@marktplatz-nord.example",
+         "Ihre Bestellung ist unterwegs",
+         "2026-10-22T14:30:00+01:00",
+         "Ihre Bestellung wurde verschickt. Die Sendung können Sie online "
+         "verfolgen."),
         (102, "Marktplatz Nord", "news@marktplatz-nord.example",
          "Ihre Anzeige wurde freigegeben",
          "2026-10-24T17:45:00+01:00",
@@ -115,17 +120,47 @@ def liste(_konto, ordner):
     return {"envelopes": eintraege}
 
 
+# Beispiel einer HTML-Mail: Tabelle und Link, so wie ein Newsletter aussieht.
+# Ohne diesen Fall laesst sich die HTML-Anzeige im Demo-Modus nicht pruefen.
+_HTML_BEISPIEL = """<html><body style="font-family:sans-serif">
+<h2 style="color:#c8a04a">Ihre Bestellung ist unterwegs</h2>
+<p>Guten Tag,</p>
+<p>die Lieferung zu Ihrer Bestellung <b>2026-114</b> wurde heute verschickt.</p>
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse">
+  <tr style="background:#eee"><th>Artikel</th><th>Menge</th><th>Preis</th></tr>
+  <tr><td>Kaffeemaschine Profi X3</td><td>2</td><td>489,00 &euro;</td></tr>
+  <tr><td>Entkalkungspatronen</td><td>1</td><td>29,90 &euro;</td></tr>
+</table>
+<p>Die Sendung verfolgen Sie <a href="https://example.com/sendung/12345">hier</a>.</p>
+<p style="color:#666;font-size:12px">Mit freundlichen Gr&uuml;&szlig;en<br>
+Marktplatz Nord</p>
+</body></html>"""
+
+
+def _ist_html(mid):
+    """Die Beispielbestellung ist die HTML-Mail des Demo-Bestands."""
+    return int(mid) == _HTML_MID
+
+
+_HTML_MID = 199
+
+
 def lesen(_konto, mid, _ordner):
     mid = int(mid)
     for ordner, eintraege in _MAILS.items():
         for m in eintraege:
             if m[0] == mid:
                 _, name, adresse, betreff, datum, text = m
-                return {"subject": betreff,
-                        "from": f"{name} <{adresse}>" if name else adresse,
-                        "date": datum,
-                        "anhaenge": [],
-                        "body": text}
+                antwort = {"subject": betreff,
+                          "from": f"{name} <{adresse}>" if name else adresse,
+                          "date": datum,
+                          "anhaenge": [],
+                          "body": text,
+                          "body_html": "",
+                          "bilder_laden": False}
+                if _ist_html(mid):
+                    antwort["body_html"] = _HTML_BEISPIEL
+                return antwort
     return {"error": "Nachricht nicht gefunden"}
 
 

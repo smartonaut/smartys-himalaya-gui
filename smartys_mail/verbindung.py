@@ -21,6 +21,9 @@ STANDARD = {
     "modus": "lokal",          # "lokal" oder "ssh"
     "ssh_ziel": "",            # z.B. benutzer@192.168.1.50
     "himalaya_pfad": "himalaya",  # Pfad auf dem entfernten Rechner
+    # Externe Bilder in HTML-Mails laden? Standard: nein. Ein Zaehlpixel
+    # verraet dem Absender sofort, dass und wann die Mail gelesen wurde.
+    "bilder_laden": False,
 }
 
 
@@ -87,7 +90,8 @@ def speichern(daten):
     if modus == "ssh" and not ziel:
         return "Ohne Rechnerangabe (z.B. benutzer@192.168.1.50) kein SSH-Betrieb"
     pfad = (daten.get("himalaya_pfad") or "himalaya").strip() or "himalaya"
-    neu = {"modus": modus, "ssh_ziel": ziel, "himalaya_pfad": pfad}
+    neu = {"modus": modus, "ssh_ziel": ziel, "himalaya_pfad": pfad,
+           "bilder_laden": bool(daten.get("bilder_laden"))}
     try:
         os.makedirs(os.path.dirname(_datei()), exist_ok=True)
         with open(_datei(), "w", encoding="utf-8") as f:

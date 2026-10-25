@@ -4,6 +4,30 @@ Alle nennenswerten Änderungen an der Smartys Himalaya GUI. Format orientiert
 an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/) und
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.3.0] — 2026-10-26
+
+Schwerpunkt: Die HTML-Anzeige war zwar da, aber unbrauchbar.
+
+### Behoben
+
+- **HTML-Mails wurden nur als schmaler Streifen angezeigt.** Der Rahmen konnte
+  seine Höhe nicht messen (`sandbox` ohne `allow-same-origin` gibt
+  `contentDocument` nicht heraus), also blieb er bei den 180 px aus dem
+  Stylesheet. Jetzt feste Höhe von 72 % der Fensterhöhe mit eigenem
+  Scrollbalken — die automatische Nachmessung war unzuverlässig (3.829 px für
+  269 Zeichen Text) und ist wieder entfernt.
+- Die Einstellung stand auf `ssh` mit dem eigenen Rechner als Ziel, sodass
+  himalaya per SSH auf sich selbst aufgerufen wurde. Jetzt `lokal`.
+
+### Neu
+
+- **Schalter „Bilder aus Mails laden"** in den Einstellungen (Zahnrad neben
+  „Konten"). Standard: aus. Der Hinweis darunter erklärt den Grund.
+- **HTML-Beispielmail im Demo-Modus.** Ohne sie ließ sich die HTML-Anzeige
+  gar nicht prüfen — der Demo-Bestand hatte nur reine Textmails.
+
+---
+
 ## [0.2.0] — 2026-10-25
 
 Schwerpunkt: Mails werden so angezeigt, wie sie gedacht sind.

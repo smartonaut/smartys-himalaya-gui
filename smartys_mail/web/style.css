@@ -533,5 +533,9 @@ details summary:hover { color: var(--gold); }
 .kopf > span{display:flex;gap:4px;align-items:center}
 
 /* HTML-Mails: eigener Rahmen, damit fremdes CSS nicht die Oberflaeche kippt */
-.mailhtml{width:100%;min-height:180px;border:0;background:transparent;
-  border-radius:8px;display:block;margin:4px 0 10px}
+/* Feste Hoehe mit eigenem Scrollbalken: die automatische Anpassung ueber
+   contentDocument war unzuverlaessig. So bleiben auch sehr lange Newsletter
+   bedienbar, ohne dass die Mailspalte meterlang wird. */
+.mailhtml{width:100%;height:min(72vh,900px);min-height:360px;border:0;
+  background:transparent;border-radius:8px;display:block;margin:4px 0 10px;
+  overflow:auto}

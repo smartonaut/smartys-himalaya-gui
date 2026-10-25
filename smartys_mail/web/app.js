@@ -20,6 +20,12 @@ async function verbindungEditor(){
         '<div class="hinweis" style="padding:6px 0 10px;font-size:12px">Der öffentliche SSH-Schlüssel '+
           'dieses Rechners muss dort hinterlegt sein — sonst kommt keine Verbindung zustande.</div>'+
       '</div>'+
+      '<label style="display:block;margin:14px 0 6px;color:#a3b1c2;font-size:12.5px">'+
+        '<input type="checkbox" id="vBilder" '+(v.bilder_laden?'checked':'')+'> '+
+        'Bilder aus Mails laden</label>'+
+      '<div class="hinweis" style="padding:0 0 12px;font-size:12px">Aus: fremde Bilder bleiben '+
+        'gesperrt. Ein eingebundenes Z&auml;hlpixel verr&auml;t dem Absender sonst, dass und wann '+
+        'du die Mail ge&ouml;ffnet hast — bei Newslettern passiert genau das.</div>'+
       '<div class="senden-zeile"><button id="vSpeichern" onclick="verbindungSpeichern()">Speichern und prüfen</button>'+
         '<span class="status" id="vStatus"></span></div>'+
     '</div>';
@@ -35,6 +41,7 @@ async function verbindungSpeichern(){
   const r=await fetch('/api/verbindung',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({modus:modus,
       ssh_ziel:document.getElementById('vZiel')?.value.trim()||'',
+      bilder_laden: !!document.getElementById('vBilder')?.checked,
       himalaya_pfad:document.getElementById('vPfad')?.value.trim()||'himalaya'})});
   const d=await r.json();
   bt.disabled=false;
@@ -509,17 +516,22 @@ ladeKonten();
    --------------------------------------------------------------- */
 function mailansicht(d){
   if(d && d.body_html && d.body_html.length>60){
-    return '<iframe class="mailhtml" sandbox="allow-popups allow-popups-to-escape-sandbox" '+
-           'referrerpolicy="no-referrer" srcdoc="'+esc(docMitCsp(d.body_html))+'" '+
-           'onload="mailhtmlHoehe(this)"></iframe>';
+    return '<iframe class="mailhtml" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" '+
+           'referrerpolicy="no-referrer" srcdoc="'+esc(docMitCsp(d.body_html, d.bilder_laden))+'">'+
+           '</iframe>';
   }
   return '<pre class="body">'+esc((d&&d.body)||'')+'</pre>';
 }
 
-function docMitCsp(html){
-  const kopf='<meta http-equiv="Content-Security-Policy" content="'+
-    'default-src \'none\'; style-src \'unsafe-inline\'; img-src data:; font-src data:">'+
-    '<base target="_blank">'+
+function docMitCsp(html, bilderLaden){
+  // Bilder nur laden, wenn der Nutzer es in den Einstellungen erlaubt hat.
+  // Sonst verraet ein Zaehlpixel dem Absender sofort, dass die Mail offen ist.
+  const bildQuellen = bilderLaden ? "img-src data: https: http:;"
+                                  : "img-src data:;";
+  const kopf = '<meta http-equiv="Content-Security-Policy" content="' +
+    "default-src 'none'; style-src 'unsafe-inline'; " + bildQuellen +
+    ' font-src data: https:">' +
+    '<base target="_blank">' +
     '<style>body{font-family:system-ui,-apple-system,sans-serif;font-size:14px;'+
     'line-height:1.55;color:#e8e8ea;background:transparent;margin:0;padding:2px;'+
     'word-wrap:break-word}a{color:#ffc94d}img{max-width:100%;height:auto}'+
@@ -536,8 +548,10 @@ function docMitCsp(html){
 }
 
 function mailhtmlHoehe(rahmen){
-  try{
-    const h=rahmen.contentDocument.documentElement.scrollHeight;
-    if(h>80) rahmen.style.height=Math.min(h+16,4000)+'px';
-  }catch(e){/* sandbox verhindert Zugriff — Standardhoehe bleibt */}
+  // Bewusst KEINE automatische Hoehenanpassung: die Messung ueber
+  // contentDocument war unzuverlaessig (3829 px fuer 269 Zeichen Text,
+  // je nach Layout und Messzeitpunkt). Der Rahmen bekommt stattdessen eine
+  // feste Hoehe und einen eigenen Scrollbalken — so verhalten sich
+  // Mailprogramme auch, und sehr lange Newsletter bleiben bedienbar.
+  rahmen.style.height = "";
 }
