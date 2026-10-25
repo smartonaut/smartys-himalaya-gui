@@ -73,8 +73,21 @@ def befehlszeile(args, mit_json=False):
     teile += [str(a) for a in args]
 
     if einstellung["modus"] == "ssh":
-        programm = einstellung["himalaya_pfad"] or "himalaya"
-        fernbefehl = " ".join([shlex.quote(programm)] + [shlex.quote(t) for t in teile])
+        programm = (einstellung["himalaya_pfad"] or "himalaya").strip()
+        # Nicht-interaktive SSH-Sitzungen lesen .profile/.bashrc nicht, dort ist
+        # himalaya also oft NICHT im PATH — auch wenn es im Terminal klappt.
+        # Deshalb die ueblichen Installationsorte der Reihe nach probieren,
+        # statt den Nutzer nach einem Pfad zu fragen, den er nicht kennt.
+        if programm in ("himalaya", "", "./himalaya"):
+            suche = ("command -v himalaya 2>/dev/null"
+                     " || ls ~/.local/bin/himalaya 2>/dev/null"
+                     " || ls ~/.cargo/bin/himalaya 2>/dev/null"
+                     " || ls /usr/local/bin/himalaya 2>/dev/null"
+                     " || echo himalaya")
+            # Geschweifte Klammern: sonst bindet die Pipe nur an das letzte
+            # Kommando der Kette.
+            programm = f'"$( {{ {suche}; }} | head -n1 )"'
+        fernbefehl = " ".join([programm] + [shlex.quote(t) for t in teile])
         # accept-new: beim ersten Verbinden wird der Schluessel gespeichert,
         # ein SPAETER geaenderter Schluessel wird weiterhin abgelehnt. Ohne
         # diese Option scheitert der erste Aufruf auf jedem frischen Rechner
