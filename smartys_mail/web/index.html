@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8">
+<title>Smartys Himalaya GUI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="style.css"></head>
+<body>
+<div id="app">
+  <div class="spalte" id="konten">
+    <div class="kopf">Konten
+      <span>
+        <button class="neu" style="padding:4px 8px" onclick="signaturBearbeiten()" title="Signatur bearbeiten">✎</button>
+        <span style="font-size:11px;color:#5a6b85">0.1</span>
+      </span>
+    </div>
+    <div id="kontenliste" class="hinweis">lade…</div>
+  </div>
+  <div class="spalte" id="liste">
+    <div class="kopf"><span id="listenkopf">Posteingang</span>
+      <button class="neu" onclick="neueMail()">+ Neu</button></div>
+    <input class="such" id="suche" placeholder="Suchen…">
+  </div>
+  <div id="lesen"><div class="hinweis">Konto wählen</div></div>
+</div>
+<script src="app.js"></script>
+</body></html>

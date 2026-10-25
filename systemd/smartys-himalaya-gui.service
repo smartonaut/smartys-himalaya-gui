@@ -1,0 +1,14 @@
+[Unit]
+Description=Smartys Himalaya GUI — Mail-Oberflaeche ueber himalaya
+After=network-online.target
+
+[Service]
+Type=simple
+# Pfad anpassen, falls das Projekt woanders liegt
+WorkingDirectory=%h/Projekte/smartys-himalaya-gui
+ExecStart=/usr/bin/python3 -m smartys_mail
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

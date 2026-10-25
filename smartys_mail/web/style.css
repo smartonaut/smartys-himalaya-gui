@@ -1,0 +1,66 @@
+:root{--bg:#0b0e14;--card:#131a26;--rand:#232c42;--text:#dde4f0;--muted:#8fa0b8;--gold:#ffc94d}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.5 system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden}
+#app{display:grid;grid-template-columns:230px 360px 1fr;height:100vh}
+.spalte{overflow:auto;border-right:1px solid var(--rand);height:100vh}
+.kopf{padding:12px 14px;border-bottom:1px solid var(--rand);font-weight:600;color:var(--gold);
+ display:flex;justify-content:space-between;align-items:center;gap:8px}
+.konto{padding:7px 14px;cursor:pointer;font-size:13px;border-left:3px solid transparent}
+.konto:hover{background:#182233}
+.konto.aktiv{background:#1c2740;border-left-color:var(--gold);color:var(--gold)}
+.ordner{padding:5px 12px 5px 26px;cursor:pointer;font-size:12.5px;color:var(--muted)}
+.ordner:hover{background:#182233;color:var(--text)}
+.ordner.aktiv{color:var(--gold);background:#1c2740}
+.mail{padding:9px 12px;border-bottom:1px solid #1b2333;cursor:pointer}
+.mail:hover{background:#182233}
+.mail.aktiv{background:#1c2740}
+.von{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+.betreff{font-size:13px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ungelesen .betreff{font-weight:700;color:#fff}
+#lesen{padding:16px 20px;overflow:auto;height:100vh}
+#lesen h2{margin:0 0 6px;font-size:17px}
+.meta{color:var(--muted);font-size:12px;margin-bottom:10px}
+.hinweis{color:var(--muted);padding:20px;font-size:13px}
+#kontenliste{padding:0}
+#konten,#liste{overflow-y:auto}
+input.such{width:100%;padding:8px 12px;background:#0f1520;border:0;border-bottom:1px solid var(--rand);
+ color:var(--text);outline:none}
+.knopfleiste{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0;padding-bottom:10px;
+ border-bottom:1px solid var(--rand)}
+.knopfleiste button{padding:5px 11px;background:#1c2740;border:1px solid var(--rand);color:var(--text);
+ border-radius:4px;font-size:12px;cursor:pointer}
+.knopfleiste button:hover{border-color:var(--gold);color:var(--gold)}
+pre.body{white-space:pre-wrap;word-wrap:break-word;font:13px/1.6 ui-monospace,monospace;margin:0}
+.anhaenge{margin:12px 0;padding:10px;background:#111a27;border:1px solid var(--rand);
+ border-radius:5px;font-size:12.5px}
+.anhaenge a{color:var(--gold);text-decoration:none;margin-right:14px}
+.verfassen{margin-top:16px;border-top:1px solid var(--rand);padding-top:12px}
+.verfassen input{width:100%;padding:8px 10px;margin-bottom:7px;background:#0f1520;
+ border:1px solid var(--rand);border-radius:4px;color:var(--text);font:13px/1.5 system-ui,sans-serif;outline:none}
+.verfassen input:focus{border-color:var(--gold)}
+.toolbar{display:flex;gap:4px;flex-wrap:wrap;padding:6px;background:#0f1520;
+ border:1px solid var(--rand);border-radius:4px 4px 0 0}
+.toolbar button{min-width:30px;height:28px;padding:0 7px;background:#1c2740;border:1px solid var(--rand);
+ color:var(--text);border-radius:3px;cursor:pointer;font-size:13px}
+.toolbar button:hover{border-color:var(--gold);color:var(--gold)}
+.toolbar select{background:#1c2740;border:1px solid var(--rand);color:var(--text);border-radius:3px;
+ height:28px;font-size:12px}
+.toolbar input[type=color]{width:30px;height:28px;padding:1px;background:#1c2740;
+ border:1px solid var(--rand);border-radius:3px;cursor:pointer}
+#editor{min-height:180px;max-height:420px;overflow:auto;padding:12px;background:#fff;color:#111;
+ border:1px solid var(--rand);border-top:0;border-radius:0 0 4px 4px;font:14px/1.55 system-ui,sans-serif;outline:none}
+#editor a{color:#0645ad}
+.siggruppe{padding:10px 12px;border:1px solid var(--rand);border-radius:5px;margin-bottom:8px;
+ background:#111a27;cursor:pointer}
+.siggruppe:hover{border-color:var(--gold)}
+#signaturEditor{min-height:150px;max-height:320px;overflow:auto;padding:12px;background:#fff;color:#111;
+ border:1px solid var(--rand);border-top:0;border-radius:0 0 4px 4px;font:14px/1.55 system-ui,sans-serif;outline:none}
+.senden-zeile{display:flex;gap:10px;align-items:center;margin-top:8px}
+.senden-zeile button{padding:8px 20px;background:var(--gold);color:#1a1206;border:0;border-radius:5px;
+ font-weight:600;cursor:pointer}
+.senden-zeile button:disabled{opacity:.5;cursor:default}
+.status{font-size:12px}
+.status.ok{color:#5fd08a}
+.status.fehler{color:#ff7a7a}
+.neu{background:var(--gold);color:#1a1206;border:0;border-radius:4px;padding:5px 12px;
+ font-weight:600;font-size:12px;cursor:pointer}

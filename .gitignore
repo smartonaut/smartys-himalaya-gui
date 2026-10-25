@@ -1,0 +1,14 @@
+# Zugangsdaten und persoenliche Daten — niemals ins Repository
+config.toml
+*.toml.bak
+signaturen.json
+*.log
+*.pyc
+__pycache__/
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+.DS_Store
+screenshots/privat/
