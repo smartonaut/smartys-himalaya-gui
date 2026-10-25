@@ -114,12 +114,44 @@ def _mit_gtk(url, titel):
     return True
 
 
+def _warte_auf_remote(url, sekunden=15):
+    """Pruefen, ob ein entfernter Server antwortet (statt lokal zu starten)."""
+    import urllib.request
+    ende = time.time() + sekunden
+    while time.time() < ende:
+        try:
+            with urllib.request.urlopen(url, timeout=2):
+                return True
+        except Exception:
+            time.sleep(0.4)
+    return False
+
+
 def starten(port=8771):
     titel = "Smartys Himalaya GUI"
-    url = f"http://127.0.0.1:{port}/"
-    if not _server_starten(port):
-        print(f"Der interne Server antwortet nicht auf Port {port}.", file=sys.stderr)
-        return 1
+
+    # Zwei Betriebsarten:
+    #   1. Server laeuft auf DIESEM Rechner (Standard) — eigener Prozess.
+    #   2. Server laeuft auf einem anderen Rechner (SMARTYS_MAIL_REMOTE),
+    #      etwa dem Hauptrechner im LAN. Dann wird KEIN lokaler Server
+    #      gestartet: die Oberflaeche ist nur das Fenster zur Gegenstelle,
+    #      und himalaya muss hier gar nicht installiert sein.
+    remote = os.environ.get("SMARTYS_MAIL_REMOTE", "").strip()
+    if remote:
+        url = remote if remote.startswith("http") else f"http://{remote}"
+        if not url.endswith("/"):
+            url += "/"
+        if not _warte_auf_remote(url):
+            print(f"Der entfernte Server antwortet nicht: {url}", file=sys.stderr)
+            print("Laeuft dort der Dienst, und ist der Tunnel offen?",
+                  file=sys.stderr)
+            return 1
+    else:
+        url = f"http://127.0.0.1:{port}/"
+        if not _server_starten(port):
+            print(f"Der interne Server antwortet nicht auf Port {port}.",
+                  file=sys.stderr)
+            return 1
 
     # Reihenfolge: pywebview (ueberall), dann GTK (Linux), dann Browser
     try:

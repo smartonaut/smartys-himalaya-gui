@@ -531,3 +531,7 @@ details summary:hover { color: var(--gold); }
   color:var(--text);
 }
 .kopf > span{display:flex;gap:4px;align-items:center}
+
+/* HTML-Mails: eigener Rahmen, damit fremdes CSS nicht die Oberflaeche kippt */
+.mailhtml{width:100%;min-height:180px;border:0;background:transparent;
+  border-radius:8px;display:block;margin:4px 0 10px}

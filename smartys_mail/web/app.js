@@ -271,7 +271,7 @@ async function lese(id,el,env){
       '<button onclick="alsGelesen()" title="Als gelesen oder ungelesen markieren">\u25cf Gelesen</button>'+
       '<button onclick="loeschen()" title="In den Papierkorb (Entf)">\u2715 Löschen</button>'+
     '</div>'+
-    '<pre class="body">'+esc(d.body||'')+'</pre>'+
+    mailansicht(d)+
     '<div id="editorbereich"></div>';
   window._letzte={subject:betreff, from:von, date:d.date||'', body:d.body||''};
   // Gelesene Nachricht nicht weiter als ungelesen anzeigen
@@ -493,3 +493,51 @@ document.getElementById('suche').addEventListener('input',e=>{
   },450);
 });
 ladeKonten();
+
+/* ---------------------------------------------------------------
+   Mailinhalt darstellen. Zwei Faelle:
+
+   * HTML-Mail: sandboxed iframe mit srcdoc. Skripte sind im HTML
+     bereits entfernt (mime._entschaerfen), hier kommt die zweite
+     Sperre: ohne allow-scripts laeuft nichts, ohne allow-same-origin
+     kommt das Dokument nicht an die Oberflaeche. Links bleiben
+     klickbar und oeffnen im Systembrowser (base target=_blank).
+     Bilder sind per CSP gesperrt — ein geladenes Zaehlpixel verraet
+     dem Absender sofort, dass und wann die Mail gelesen wurde.
+
+   * Nur Text: <pre>, wie bisher.
+   --------------------------------------------------------------- */
+function mailansicht(d){
+  if(d && d.body_html && d.body_html.length>60){
+    return '<iframe class="mailhtml" sandbox="allow-popups allow-popups-to-escape-sandbox" '+
+           'referrerpolicy="no-referrer" srcdoc="'+esc(docMitCsp(d.body_html))+'" '+
+           'onload="mailhtmlHoehe(this)"></iframe>';
+  }
+  return '<pre class="body">'+esc((d&&d.body)||'')+'</pre>';
+}
+
+function docMitCsp(html){
+  const kopf='<meta http-equiv="Content-Security-Policy" content="'+
+    'default-src \'none\'; style-src \'unsafe-inline\'; img-src data:; font-src data:">'+
+    '<base target="_blank">'+
+    '<style>body{font-family:system-ui,-apple-system,sans-serif;font-size:14px;'+
+    'line-height:1.55;color:#e8e8ea;background:transparent;margin:0;padding:2px;'+
+    'word-wrap:break-word}a{color:#ffc94d}img{max-width:100%;height:auto}'+
+    'table{max-width:100%;border-collapse:collapse;font-size:13px}'+
+    'td,th{padding:3px 6px}blockquote{border-left:3px solid #444;margin:8px 0;'+
+    'padding-left:10px;color:#aaa}</style>';
+  if(/<head[^>]*>/i.test(html)){
+    return html.replace(/<head([^>]*)>/i,'<head$1>'+kopf);
+  }
+  if(/<html[^>]*>/i.test(html)){
+    return html.replace(/<html([^>]*)>/i,'<html$1><head>'+kopf+'</head>');
+  }
+  return kopf+html;
+}
+
+function mailhtmlHoehe(rahmen){
+  try{
+    const h=rahmen.contentDocument.documentElement.scrollHeight;
+    if(h>80) rahmen.style.height=Math.min(h+16,4000)+'px';
+  }catch(e){/* sandbox verhindert Zugriff — Standardhoehe bleibt */}
+}
