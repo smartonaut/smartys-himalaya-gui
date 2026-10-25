@@ -13,7 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs, quote
 
 from . import demo, himalaya, konten, pfade, signaturen, verbindung
-from .mime import mail_text, nachricht_bauen
+from .mime import kopf_entpacken, mail_html, mail_text, nachricht_bauen
 
 PORT = int(os.environ.get("SMARTYS_MAIL_PORT", "8770"))
 BIND = os.environ.get("SMARTYS_MAIL_BIND", "127.0.0.1")
@@ -309,15 +309,34 @@ class Handler(BaseHTTPRequestHandler):
         code, roh, fehler = 1, "", ""
         for variante in himalaya.ordner_varianten(box):
             code, roh, fehler = himalaya.roh_aufruf(
-                ["message", "read", "-a", konto, "-m", variante, mid])
+                # --raw ist Pflicht: ohne das zeigt himalaya nur den
+                # text/plain-Teil, und HTML-Mails kommen als flacher
+                # Textblock an (Tabellen, Links, Formatierung verloren).
+                ["message", "read", "-a", konto, "-m", variante, mid, "--raw"])
             if code == 0 and roh:
                 box = variante
                 break
         if code != 0 and not roh:
             return self._json({"error": (fehler or "").strip()[:300]})
 
+        # Bei einer Rohmail (--raw) steht der Kopf als RFC-822, nicht als
+        # einfacher Text. Beides abdecken: erst versuchen, den Kopf aus der
+        # Mailstruktur zu lesen, sonst wie bisher die erste Leerzeile teilen.
+        felder_aus_mime = {}
+        try:
+            _h, _t = None, None
+            import email
+            from email import policy
+            msg = email.message_from_string(roh, policy=policy.default)
+            for feld in ("subject", "from", "to", "date"):
+                wert = msg.get(feld)
+                if wert:
+                    felder_aus_mime[feld] = str(wert)
+        except Exception:
+            felder_aus_mime = {}
+
         kopf, _, rumpf = roh.partition("\n\n")
-        felder = {}
+        felder = dict(felder_aus_mime)
         for zeile in kopf.splitlines():
             if ":" in zeile:
                 k, v = zeile.split(":", 1)
@@ -329,11 +348,20 @@ class Handler(BaseHTTPRequestHandler):
         for x in (antwort.get("attachments") or []):
             anhaenge.append({"name": x.get("filename") or x.get("name") or ""})
 
-        return self._json({"subject": felder.get("subject", ""),
-                           "from": felder.get("from", ""),
+        return self._json({"subject": kopf_entpacken(felder.get("subject", "")),
+                           "from": kopf_entpacken(felder.get("from", "")),
                            "date": felder.get("date", ""),
                            "anhaenge": anhaenge,
-                           "body": mail_text(rumpf or roh)})
+                           # Immer die VOLLE Rohmail uebergeben: rumpf ist
+                           # der Text nach dem ersten Leerzeilen-Trenner und
+                           # damit kein gueltiges MIME mehr — mail_text()
+                           # baut daraus sonst aus dem HTML einen 49k-Text
+                           # statt den vorhandenen text/plain-Teil zu nehmen.
+                           "body": mail_text(roh),
+                           # HTML-Fassung fuer die Anzeige. Fehlt sie,
+                           # zeigt die Oberflaeche den Text — nie beides
+                           # untereinander, das doppelt den Inhalt.
+                           "body_html": mail_html(roh)})
 
     def _anhang(self, w):
         konto, mid = w("account"), w("id")
