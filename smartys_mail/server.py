@@ -12,7 +12,7 @@ import tomllib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs, quote
 
-from . import demo, himalaya, konten, pfade, signaturen
+from . import demo, himalaya, konten, pfade, signaturen, verbindung
 from .mime import mail_text, nachricht_bauen
 
 PORT = int(os.environ.get("SMARTYS_MAIL_PORT", "8770"))
@@ -82,6 +82,17 @@ class Handler(BaseHTTPRequestHandler):
             return self._loeschen(d)
         if pfad == "/api/signatur":
             return self._signatur_setzen(d)
+        if pfad == "/api/verbindung":
+            fehler = verbindung.speichern(d)
+            if fehler:
+                return self._json({"error": fehler})
+            # Sofort pruefen, ob die Einstellung traegt
+            probe = himalaya.json_aufruf(["account", "list"], timeout=45)
+            return self._json({"ok": True,
+                               "erreichbar": "error" not in probe,
+                               "meldung": probe.get("error") or "",
+                               "konten": len(probe.get("accounts") or [])})
+
         if pfad == "/api/konto/pruefen":
             return self._konto_pruefen(d)
         if pfad == "/api/konto/anlegen":
@@ -207,6 +218,13 @@ class Handler(BaseHTTPRequestHandler):
                 typ += "; charset=utf-8"
             with open(datei, "rb") as f:
                 return self._sende(200, typ, f.read())
+
+        if pfad == "/api/verbindung":
+            einstellung = verbindung.laden()
+            # Kennwort/Token gibt es hier nicht — nur wo himalaya laeuft
+            einstellung["himalaya_gefunden"] = os.path.exists(pfade.himalaya_binary()) or \
+                os.path.exists(pfade.himalaya_binary() + ".exe")
+            return self._json(einstellung)
 
         if pfad == "/api/accounts":
             if DEMO:
