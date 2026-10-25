@@ -4,9 +4,13 @@ async function hole(u){const r=await fetch(u);return r.json()}
 async function ladeKonten(){
   const d=await hole('/api/accounts');
   const el=document.getElementById('kontenliste');
-  if(d.error){el.textContent='Fehler: '+d.error;return}
+  // "No configuration found" ist kein Defekt, sondern der Normalfall beim
+  // ersten Start: dann gehoert der Einrichtungsassistent hin, nicht der
+  // rohe Fehlertext von himalaya.
+  const keineKonfig = d.error && /no configuration|config.*not found/i.test(d.error);
+  if(d.error && !keineKonfig){el.textContent='Fehler: '+d.error;return}
   el.innerHTML='';
-  if(!(d.accounts||[]).length){kontoAssistent();return}
+  if(keineKonfig || !(d.accounts||[]).length){kontoAssistent();return}
   (d.accounts||[]).forEach(a=>{
     const div=document.createElement('div');
     div.className='konto';div.dataset.name=a.name;
