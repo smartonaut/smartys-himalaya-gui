@@ -19,7 +19,7 @@ from . import pfade
 
 STANDARD = {
     "modus": "lokal",          # "lokal" oder "ssh"
-    "ssh_ziel": "",            # z.B. smarty@192.168.1.238
+    "ssh_ziel": "",            # z.B. benutzer@192.168.1.50
     "himalaya_pfad": "himalaya",  # Pfad auf dem entfernten Rechner
 }
 
@@ -85,7 +85,7 @@ def speichern(daten):
         return "Unbekannter Modus"
     ziel = (daten.get("ssh_ziel") or "").strip()
     if modus == "ssh" and not ziel:
-        return "Ohne Rechnerangabe (z.B. smarty@192.168.1.238) kein SSH-Betrieb"
+        return "Ohne Rechnerangabe (z.B. benutzer@192.168.1.50) kein SSH-Betrieb"
     pfad = (daten.get("himalaya_pfad") or "himalaya").strip() or "himalaya"
     neu = {"modus": modus, "ssh_ziel": ziel, "himalaya_pfad": pfad}
     try:

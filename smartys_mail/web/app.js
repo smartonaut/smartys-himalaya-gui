@@ -15,7 +15,7 @@ async function verbindungEditor(){
       '<label style="display:block;margin-bottom:12px;color:#a3b1c2;font-size:12.5px">'+
         '<input type="radio" name="vmodus" value="ssh" '+(ssh?'checked':'')+'> Auf einem anderen Rechner (SSH)</label>'+
       '<div id="sshFelder" style="display:'+(ssh?'block':'none')+'">'+
-        '<input id="vZiel" placeholder="benutzer@rechner, z.B. smarty@192.168.1.238" value="'+esc(v.ssh_ziel||'')+'">'+
+        '<input id="vZiel" placeholder="benutzer@rechner, z.B. benutzer@192.168.1.50" value="'+esc(v.ssh_ziel||'')+'">'+
         '<input id="vPfad" placeholder="Pfad zu himalaya dort (Standard: himalaya)" value="'+esc(v.himalaya_pfad||'himalaya')+'">'+
         '<div class="hinweis" style="padding:6px 0 10px;font-size:12px">Der öffentliche SSH-Schlüssel '+
           'dieses Rechners muss dort hinterlegt sein — sonst kommt keine Verbindung zustande.</div>'+
