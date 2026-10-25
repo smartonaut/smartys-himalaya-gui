@@ -12,7 +12,7 @@ import tomllib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs, quote
 
-from . import himalaya, signaturen
+from . import demo, himalaya, konten, signaturen
 from .mime import mail_text, nachricht_bauen
 
 PORT = int(os.environ.get("SMARTYS_MAIL_PORT", "8770"))
@@ -20,6 +20,8 @@ BIND = os.environ.get("SMARTYS_MAIL_BIND", "127.0.0.1")
 WEB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
 HIMALAYA_CONFIG = os.path.expanduser("~/.config/himalaya/config.toml")
 DOWNLOAD_TMP = os.path.expanduser("~/.cache/smartys-himalaya-gui/downloads")
+# Beispieldaten statt echter Postfaecher (Screenshots, Ausprobieren)
+DEMO = os.environ.get("SMARTYS_MAIL_DEMO") == "1"
 
 
 def konten_emails():
@@ -80,6 +82,10 @@ class Handler(BaseHTTPRequestHandler):
             return self._loeschen(d)
         if pfad == "/api/signatur":
             return self._signatur_setzen(d)
+        if pfad == "/api/konto/pruefen":
+            return self._konto_pruefen(d)
+        if pfad == "/api/konto/anlegen":
+            return self._konto_anlegen(d)
         self._sende(404, "text/plain; charset=utf-8", "nicht gefunden")
 
     def _flag(self, d):
@@ -113,6 +119,28 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:  # noqa: BLE001
             return self._json({"error": f"Speichern fehlgeschlagen: {e}"})
         return self._json({"ok": True})
+
+    def _konto_pruefen(self, d):
+        """Serverdaten zum Adressteil vorschlagen."""
+        email = (d.get("email") or "").strip()
+        if not email:
+            return self._json({"error": "E-Mail fehlt"})
+        return self._json(konten.anbieter_erkennen(email))
+
+    def _konto_anlegen(self, d):
+        ergebnis = konten.konto_hinzufuegen(
+            email=d.get("email"), passwort=d.get("passwort"),
+            anzeigename=d.get("anzeigename"), name=d.get("name"),
+            imap_host=d.get("imap_host"), imap_port=d.get("imap_port") or 993,
+            smtp_host=d.get("smtp_host"), smtp_port=d.get("smtp_port") or 465)
+        if "error" in ergebnis:
+            return self._json(ergebnis)
+        # Verbindung sofort testen, damit der Nutzer nicht im Dunkeln sitzt
+        test = himalaya.json_aufruf(
+            ["account", "list"], timeout=30)
+        namen = [a.get("name") for a in (test.get("accounts") or [])]
+        ergebnis["sichtbar"] = ergebnis.get("name") in namen
+        return self._json(ergebnis)
 
     def _senden_mail(self, d):
         konto = (d.get("account") or "").strip()
@@ -173,9 +201,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self._sende(200, typ, f.read())
 
         if pfad == "/api/accounts":
+            if DEMO:
+                return self._json(demo.konten())
             return self._json(himalaya.json_aufruf(["account", "list"]))
 
         if pfad == "/api/signaturen":
+            if DEMO:
+                return self._json(demo.signaturen())
             daten = signaturen.laden()
             gruppen = {}
             for gruppe, konten in konten_je_gruppe().items():
@@ -188,6 +220,8 @@ class Handler(BaseHTTPRequestHandler):
             konto = w("account")
             if not konto:
                 return self._json({"error": "account fehlt"})
+            if DEMO:
+                return self._json(demo.mailboxes(konto))
             return self._json(himalaya.json_aufruf(["mailbox", "list", "-a", konto]))
 
         if pfad == "/api/list":
@@ -197,6 +231,8 @@ class Handler(BaseHTTPRequestHandler):
             konto, such = w("account"), w("q").strip()
             if not (konto and such):
                 return self._json({"error": "account/q fehlt"})
+            if DEMO:
+                return self._json(demo.suche(konto, such))
             sicher = such.replace('"', " ")
             return self._json(himalaya.json_aufruf(
                 ["envelope", "search", "-a", konto, f"subject {sicher} or from {sicher}"],
@@ -214,6 +250,8 @@ class Handler(BaseHTTPRequestHandler):
         konto = w("account")
         if not konto:
             return self._json({"error": "account fehlt"})
+        if DEMO:
+            return self._json(demo.liste(konto, w("mailbox", "Inbox")))
         box = w("mailbox", "Inbox")
         seite = w("page", "1")
         ergebnis = {"error": "kein Ordner"}
@@ -229,6 +267,8 @@ class Handler(BaseHTTPRequestHandler):
         box = w("mailbox", "Inbox")
         if not (konto and mid):
             return self._json({"error": "account/id fehlt"})
+        if DEMO:
+            return self._json(demo.lesen(konto, mid, box))
         code, roh, fehler = 1, "", ""
         for variante in himalaya.ordner_varianten(box):
             code, roh, fehler = himalaya.roh_aufruf(

@@ -6,6 +6,7 @@ async function ladeKonten(){
   const el=document.getElementById('kontenliste');
   if(d.error){el.textContent='Fehler: '+d.error;return}
   el.innerHTML='';
+  if(!(d.accounts||[]).length){kontoAssistent();return}
   (d.accounts||[]).forEach(a=>{
     const div=document.createElement('div');
     div.className='konto';div.dataset.name=a.name;
@@ -13,6 +14,72 @@ async function ladeKonten(){
     div.onclick=()=>waehleKonto(a.name,div);
     el.appendChild(div);
   });
+}
+
+/* ---------------------------------------------------------------- Konten */
+async function kontoAssistent(){
+  const box=document.getElementById('lesen');
+  box.innerHTML='<h2>Konto einrichten</h2>'+
+    '<div class="hinweis" style="padding:0 0 14px">Trag deine E-Mail-Adresse und das Passwort ein — '+
+    'die Servereinstellungen erkennt die App meist selbst. Nichts hiervon verlässt deinen Rechner.</div>'+
+    '<div class="verfassen" style="border-top:0;padding-top:0">'+
+      '<input id="kEmail" placeholder="E-Mail-Adresse" autocomplete="username">'+
+      '<input id="kPass" type="password" placeholder="Passwort" autocomplete="current-password">'+
+      '<input id="kName" placeholder="Anzeigename (optional)">'+
+      '<div id="kHinweis" class="hinweis" style="padding:8px 0;display:none"></div>'+
+      '<details style="margin:6px 0 10px"><summary style="cursor:pointer;color:#8fa0b8;font-size:12.5px">'+
+        'Server selbst eintragen</summary>'+
+        '<input id="kImap" placeholder="IMAP-Server (z.B. imap.gmx.net)" style="margin-top:8px">'+
+        '<input id="kImapPort" placeholder="IMAP-Port (993)" value="993">'+
+        '<input id="kSmtp" placeholder="SMTP-Server (z.B. mail.gmx.net)">'+
+        '<input id="kSmtpPort" placeholder="SMTP-Port (465)" value="465">'+
+      '</details>'+
+      '<div class="senden-zeile"><button id="kSpeichern" onclick="kontoSpeichern()">Konto hinzufügen</button>'+
+        '<span class="status" id="kStatus"></span></div>'+
+    '</div>';
+  const mail=document.getElementById('kEmail');
+  mail.addEventListener('blur',async()=>{
+    const adresse=mail.value.trim();
+    if(!adresse.includes('@'))return;
+    const r=await fetch('/api/konto/pruefen',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email:adresse})});
+    const d=await r.json();
+    const hin=document.getElementById('kHinweis');
+    if(d.imap_host){
+      document.getElementById('kImap').value=d.imap_host;
+      document.getElementById('kImapPort').value=d.imap_port;
+      document.getElementById('kSmtp').value=d.smtp_host;
+      document.getElementById('kSmtpPort').value=d.smtp_port;
+    }
+    if(d.hinweis){
+      hin.style.display='block';
+      hin.innerHTML='<b>Hinweis:</b> '+esc(d.hinweis);
+    }else{hin.style.display='none'}
+  });
+  mail.focus();
+}
+async function kontoSpeichern(){
+  const st=document.getElementById('kStatus'),bt=document.getElementById('kSpeichern');
+  const daten={
+    email:document.getElementById('kEmail').value.trim(),
+    passwort:document.getElementById('kPass').value,
+    anzeigename:document.getElementById('kName').value.trim(),
+    imap_host:document.getElementById('kImap').value.trim(),
+    imap_port:document.getElementById('kImapPort').value.trim()||993,
+    smtp_host:document.getElementById('kSmtp').value.trim(),
+    smtp_port:document.getElementById('kSmtpPort').value.trim()||465
+  };
+  if(!daten.email||!daten.passwort){
+    st.className='status fehler';st.textContent='E-Mail und Passwort sind nötig.';return;
+  }
+  bt.disabled=true;st.className='status';st.textContent='prüfe Zugangsdaten…';
+  const r=await fetch('/api/konto/anlegen',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(daten)});
+  const d=await r.json();
+  bt.disabled=false;
+  if(d.error){st.className='status fehler';st.textContent=d.error;return}
+  st.className='status ok';st.textContent='Konto „'+d.name+'" eingerichtet. Lade neu…';
+  setTimeout(()=>{document.getElementById('kontenliste').innerHTML='lade…';ladeKonten()},1200);
 }
 async function waehleKonto(name,el){
   konto=name;mail=null;ordner='INBOX';

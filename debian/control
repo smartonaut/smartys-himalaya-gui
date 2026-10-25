@@ -1,0 +1,22 @@
+Package: smartys-himalaya-gui
+Version: 0.1.0
+Section: mail
+Priority: optional
+Architecture: all
+Depends: python3 (>= 3.11), python3-gi, gir1.2-webkit2-4.1, libglib2.0-bin
+Recommends: himalaya
+Maintainer: Smarty <smartonaut@users.noreply.github.com>
+Homepage: https://github.com/smartonaut/smartys-himalaya-gui
+Description: Grafische Oberflaeche fuer himalaya
+ himalaya ist ein Mail-Client fuer das Terminal, der IMAP, SMTP, JMAP,
+ Gmail, Microsoft Graph und Maildir beherrscht — aber keine Oberflaeche
+ mitbringt.
+ .
+ Diese Anwendung liefert beides: ein eigenes Fenster (GTK/WebKit) und eine
+ Web-Oberflaeche unter http://127.0.0.1:8771. Sie versteht sich mit vielen
+ Postfaechern gleichzeitig, auch wenn diese unterschiedliche Anmeldemethoden
+ nutzen (Passwoerter, App-Passwoerter, OAuth2), weil die Anmeldung himalaya
+ uebernimmt. Zugangsdaten liegen nie in der Anwendung selbst.
+ .
+ Funktionen: Konten und Ordner, Suche, Anhaenge, Antworten, Weiterleiten,
+ Verfassen mit Formatierung und Signaturen je Kontogruppe.

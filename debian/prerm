@@ -1,0 +1,14 @@
+#!/bin/sh
+# Vor dem Entfernen: Dienst des Benutzers stoppen
+set -e
+
+BENUTZER="${SUDO_USER:-}"
+if [ -z "$BENUTZER" ] && [ -n "$PKEXEC_UID" ]; then
+    BENUTZER=$(getent passwd "$PKEXEC_UID" | cut -d: -f1)
+fi
+
+if [ -n "$BENUTZER" ] && [ "$BENUTZER" != "root" ]; then
+    su - "$BENUTZER" -c "systemctl --user disable --now smartys-himalaya-gui-web.service" >/dev/null 2>&1 || true
+fi
+
+exit 0
