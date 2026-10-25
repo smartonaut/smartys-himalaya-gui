@@ -3,16 +3,20 @@
 
 Baut eine einzelne .exe, die ohne Python-Installation laeuft. Die
 Web-Dateien muessen mit hinein, sonst startet das Programm ohne Oberflaeche.
+
+Wichtig: PyInstaller loest relative Pfade gegen das Verzeichnis dieser Datei
+auf (packaging/), nicht gegen den Projektordner. Deshalb rechnet SPECPATH
+eine Ebene hoch — sonst sucht der Build smartys_mail/ unter packaging/.
 """
 import os
 
-HIER = os.path.abspath(".")
-WEB = os.path.join(HIER, "smartys_mail", "web")
-ICONS = os.path.join(HIER, "assets", "icons")
+PROJEKT = os.path.abspath(os.path.join(SPECPATH, ".."))  # noqa: F821
+WEB = os.path.join(PROJEKT, "smartys_mail", "web")
+ICONS = os.path.join(PROJEKT, "assets", "icons")
 
 a = Analysis(
-    ["smartys_mail/__main__.py"],
-    pathex=[HIER],
+    [os.path.join(PROJEKT, "packaging", "einstieg.py")],
+    pathex=[PROJEKT],
     binaries=[],
     datas=[
         (WEB, "smartys_mail/web"),
@@ -22,6 +26,8 @@ a = Analysis(
     hiddenimports=["smartys_mail.desktop"],
     hookspath=[],
     runtime_hooks=[],
+    # Pillow und numpy werden nirgends gebraucht; ohne den Ausschluss
+    # waechst die .exe unnoetig.
     excludes=["tkinter", "matplotlib", "numpy", "PIL"],
     noarchive=False,
 )
