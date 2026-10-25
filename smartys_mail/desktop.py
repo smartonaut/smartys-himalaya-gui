@@ -38,10 +38,25 @@ def _server_starten(port):
     return _warte_auf_server(port)
 
 
+def _logo_pfad():
+    """Pfad zum Logo im Paket (fuer Fenster- und Taskleisten-Symbol)."""
+    hier = os.path.dirname(os.path.abspath(__file__))
+    for name in ("smartys-himalaya-gui.ico", "logo_256.png"):
+        pfad = os.path.join(hier, "..", "assets", "icons", name)
+        if os.path.exists(pfad):
+            return os.path.abspath(pfad)
+    return None
+
+
 def _mit_pywebview(url, titel):
     import webview  # noqa: PLC0415
-    webview.create_window(titel, url, width=1280, height=820, min_size=(900, 600))
-    webview.start()
+    # Ohne eigenes Symbol zeigt Windows in Taskleiste und Fensterleiste ein
+    # generisches Python-Symbol — die App waere nicht als Smartys-App
+    # erkennbar.
+    logo = _logo_pfad()
+    webview.create_window(titel, url, width=1280, height=820,
+                          min_size=(900, 600))
+    webview.start(icon=logo) if logo else webview.start()
     return True
 
 
@@ -56,7 +71,15 @@ def _mit_gtk(url, titel):
 
     fenster = Gtk.Window(title=titel)
     fenster.set_default_size(1280, 820)
-    fenster.set_icon_name("internet-mail")
+    # Eigenes Logo statt des Themes-Symbols
+    logo = _logo_pfad()
+    if logo:
+        try:
+            fenster.set_icon_from_file(logo)
+        except Exception:  # noqa: BLE001 — Symbol ist Beiwerk, nie ein Grund zu scheitern
+            fenster.set_icon_name("internet-mail")
+    else:
+        fenster.set_icon_name("internet-mail")
     fenster.connect("destroy", lambda *_: Gtk.main_quit())
 
     web = WebKit2.WebView()

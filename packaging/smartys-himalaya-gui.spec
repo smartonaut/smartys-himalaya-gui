@@ -20,6 +20,10 @@ a = Analysis(
     binaries=[],
     datas=[
         (WEB, "smartys_mail/web"),
+        # Alle Groessen: die Oberflaeche laedt /icon.png, das Fenster braucht
+        # das .ico fuer die Taskleiste.
+        (os.path.join(ICONS, "logo_64.png"), "assets/icons"),
+        (os.path.join(ICONS, "logo_128.png"), "assets/icons"),
         (os.path.join(ICONS, "logo_256.png"), "assets/icons"),
         (os.path.join(ICONS, "smartys-himalaya-gui.ico"), "assets/icons"),
     ],
