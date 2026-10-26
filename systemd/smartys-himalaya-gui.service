@@ -6,7 +6,7 @@ After=network-online.target
 Type=simple
 # Pfad anpassen, falls das Projekt woanders liegt
 WorkingDirectory=%h/Projekte/smartys-himalaya-gui
-ExecStart=/usr/bin/python3 -m smartys_mail
+ExecStart=/usr/bin/smartys-himalaya-gui
 Restart=always
 RestartSec=5
 

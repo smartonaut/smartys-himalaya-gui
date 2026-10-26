@@ -4,6 +4,24 @@ Alle nennenswerten Änderungen an der Smartys Himalaya GUI. Format orientiert
 an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/) und
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.3.1] — 2026-10-26
+
+Schwerpunkt: Löschen schlug bei manchen Anbietern fehl.
+
+### Behoben
+
+- **„Löschen" scheiterte mit „Destination mailbox does not exist".** himalaya
+  verschiebt beim Löschen in den in seiner Konfiguration hinterlegten
+  Papierkorb. Heißt der Ordner auf dem Server anders (z. B. `Deleted Items`
+  statt `Trash`), blieb die Mail liegen und die Oberfläche zeigte nur den
+  rohen Fehlertext.
+  Jetzt löst die GUI den Papierkorb selbst auf: zuerst der Alias aus der
+  Konfiguration, danach die üblichen Schreibweisen (`Deleted Items`,
+  `Papierkorb`, `Trash`, `Gelöschte Elemente`, `Deleted Messages`,
+  `INBOX.Trash`, `Deleted`). Findet sich keiner, kommt ein verständlicher
+  Hinweis auf `mailbox.alias.trash` statt des Rohfehlers.
+- Betrifft Fenster- und Web-Variante gleichermaßen (gemeinsamer Code).
+
 ## [0.3.0] — 2026-10-26
 
 Schwerpunkt: Die HTML-Anzeige war zwar da, aber unbrauchbar.
