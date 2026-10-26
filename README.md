@@ -56,9 +56,25 @@ einem Mailserver.**
 ### Debian / Ubuntu (empfohlen)
 
 ```bash
-wget https://github.com/smartonaut/smartys-himalaya-gui/releases/latest/download/smartys-himalaya-gui_0.1.0_all.deb
-sudo apt install ./smartys-himalaya-gui_0.1.0_all.deb
+wget https://github.com/smartonaut/smartys-himalaya-gui/releases/latest/download/smartys-himalaya-gui_0.3.1_all.deb
+sudo apt install ./smartys-himalaya-gui_0.3.1_all.deb
 ```
+
+### Fedora / Red Hat / SUSE
+
+```bash
+# Fedora / Red Hat
+sudo dnf install https://github.com/smartonaut/smartys-himalaya-gui/releases/latest/download/smartys-himalaya-gui-0.3.1-1.noarch.rpm
+
+# openSUSE / SLES
+sudo zypper install https://github.com/smartonaut/smartys-himalaya-gui/releases/latest/download/smartys-himalaya-gui-0.3.1-1.noarch.rpm
+```
+
+Das RPM legt das Programm unter `/usr/share/smartys-himalaya-gui` ab statt in
+`site-packages` — dieser Pfad ist zwischen den Distributionen verschieden.
+Für die Fenster-Variante wird WebKitGTK gebraucht (`webkit2gtk4.1` bei
+Fedora/Red Hat, `typelib-1_0-WebKit2-4_1` bei SUSE); die Web-Variante braucht
+nur Python.
 
 Danach:
 
