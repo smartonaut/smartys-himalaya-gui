@@ -4,6 +4,34 @@ Alle nennenswerten Änderungen an der Smartys Himalaya GUI. Format orientiert
 an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/) und
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.4.0] — 2026-10-26
+
+Schwerpunkt: Schreiben und Lesen in fremden Sprachen.
+
+### Neu
+
+- **Oberfläche auf Deutsch und Englisch.** Umschaltbar im Zahnrad unter
+  „Sprache der Oberfläche“; die Wahl bleibt gespeichert. Übersetzt wird nur
+  die Bedienung — Absender, Betreff, Mailinhalt und Signaturen bleiben
+  unangetastet.
+- **Rechtschreibprüfung beim Verfassen.** Betreff und Textfeld prüfen mit,
+  falsch geschriebene Wörter werden unterstrichen. Im Fenster-Programm wird
+  die Prüfung von WebKitGTK ausdrücklich eingeschaltet (braucht
+  `hunspell-de` bzw. `hunspell-en`); unter Windows prüft WebView2 von selbst.
+  Die Adressfelder sind bewusst ausgenommen.
+- **Übersetzer.** In der Nachrichtenansicht gibt es einen Knopf „⇄ Übersetzen“.
+  Zwei Wege, beide ohne Zusatzpakete:
+  * **ollama** — lokales Sprachmodell, der Text bleibt auf dem Rechner,
+  * **LibreTranslate** — selbst betriebener oder fremder Dienst.
+  Einzustellen im Zahnrad oben links unter „Übersetzer“.
+
+### Behoben
+
+- Ohne eingerichteten Übersetzer kommt ein verständlicher Hinweis statt einer
+  Fehlermeldung aus dem Nichts.
+- Sehr lange Nachrichten werden bei 12.000 Zeichen gekürzt, mit Hinweis im
+  Ergebnis — statt in eine Zeitüberschreitung zu laufen.
+
 ## [0.3.1] — 2026-10-26
 
 Schwerpunkt: Löschen schlug bei manchen Anbietern fehl.

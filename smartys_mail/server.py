@@ -12,7 +12,7 @@ import tomllib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs, quote
 
-from . import demo, himalaya, konten, pfade, signaturen, verbindung
+from . import demo, himalaya, konten, pfade, signaturen, uebersetzer, verbindung
 from .mime import kopf_entpacken, mail_html, mail_text, nachricht_bauen
 
 PORT = int(os.environ.get("SMARTYS_MAIL_PORT", "8770"))
@@ -100,6 +100,9 @@ class Handler(BaseHTTPRequestHandler):
             return self._flag(d)
         if pfad == "/api/delete":
             return self._loeschen(d)
+        if pfad == "/api/uebersetzen":
+            return self._uebersetzen(d)
+
         if pfad == "/api/signatur":
             return self._signatur_setzen(d)
         if pfad == "/api/verbindung":
@@ -174,6 +177,13 @@ class Handler(BaseHTTPRequestHandler):
             "error": "Kein Papierkorb-Ordner gefunden. In der "
                      "himalaya-Konfiguration mailbox.alias.trash auf den "
                      "echten Ordnernamen des Servers setzen."})
+
+    def _uebersetzen(self, d):
+        ergebnis, fehler = uebersetzer.uebersetzen(
+            d.get("text") or "", (d.get("ziel") or "").strip() or None)
+        if fehler:
+            return self._json({"error": fehler})
+        return self._json({"uebersetzt": ergebnis})
 
     def _signatur_setzen(self, d):
         gruppe = (d.get("gruppe") or "").strip()
@@ -266,7 +276,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._sende(404, "text/plain; charset=utf-8", "Kein Logo im Paket")
 
         # Statische Dateien
-        if pfad in ("/", "/index.html", "/app.js", "/style.css"):
+        if pfad in ("/", "/index.html", "/app.js", "/i18n.js", "/style.css"):
             datei = os.path.join(WEB, "index.html" if pfad in ("/", "/index.html") else pfad.lstrip("/"))
             if not os.path.exists(datei):
                 return self._sende(500, "text/plain; charset=utf-8", "Oberflaeche fehlt")

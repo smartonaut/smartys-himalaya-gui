@@ -5,7 +5,7 @@ async function verbindungEditor(){
   const box=document.getElementById('lesen');
   const v=await hole('/api/verbindung');
   const ssh=v.modus==='ssh';
-  box.innerHTML='<h2>Wo läuft himalaya?</h2>'+
+  box.innerHTML=ui('<h2>Wo läuft himalaya?</h2>'+
     '<div class="hinweis" style="padding:0 0 14px">Die Oberfläche kann himalaya auf diesem '+
     'Rechner benutzen — oder auf einem anderen, auf dem deine Postfächer eingerichtet sind. '+
     'Im zweiten Fall bleiben die Zugangsdaten dort, und hier wird nur ein SSH-Zugang gebraucht.</div>'+
@@ -26,9 +26,29 @@ async function verbindungEditor(){
       '<div class="hinweis" style="padding:0 0 12px;font-size:12px">Aus: fremde Bilder bleiben '+
         'gesperrt. Ein eingebundenes Z&auml;hlpixel verr&auml;t dem Absender sonst, dass und wann '+
         'du die Mail ge&ouml;ffnet hast — bei Newslettern passiert genau das.</div>'+
+      '<h3 style="margin:22px 0 8px;font-size:14px;color:#e8eef6">Übersetzer</h3>'+
+      '<div class="hinweis" style="padding:0 0 8px;font-size:12px">Damit lässt sich eine '+
+        'Nachricht auf Knopfdruck übersetzen. Ein lokales Sprachmodell (ollama) behält den '+
+        'Text auf dem Rechner; ein LibreTranslate-Dienst schickt ihn an den eingetragenen Server.</div>'+
+      '<select id="vUebDienst" style="width:100%;margin-bottom:8px">'+
+        '<option value=""'+(v.uebersetzer?'':' selected')+'>— aus —</option>'+
+        '<option value="ollama"'+(v.uebersetzer==='ollama'?' selected':'')+'>ollama (lokales Sprachmodell)</option>'+
+        '<option value="libretranslate"'+(v.uebersetzer==='libretranslate'?' selected':'')+'>LibreTranslate</option>'+
+      '</select>'+
+      '<input id="vUebUrl" placeholder="Adresse, z.B. http://127.0.0.1:11434" value="'+esc(v.uebersetzer_url||'')+'">'+
+      '<input id="vUebModell" placeholder="Modell (nur ollama), z.B. qwen2.5:7b" value="'+esc(v.uebersetzer_modell||'')+'">'+
+      '<select id="vUebZiel" style="width:100%;margin-bottom:8px">'+
+        ['Deutsch','Englisch','Französisch','Spanisch','Italienisch','Polnisch','Türkisch','Niederländisch']
+          .map(function(s){return '<option value="'+s+'"'+((v.uebersetzer_ziel||'Deutsch')===s?' selected':'')+'>'+s+'</option>'}).join('')+
+      '</select>'+
+      '<h3 style="margin:22px 0 8px;font-size:14px;color:#e8eef6">'+t('Sprache der Oberfläche')+'</h3>'+
+      '<select id="vSprache" style="width:100%;margin-bottom:8px">'+
+        '<option value="de"'+(hgIstEnglisch()?'':' selected')+'>Deutsch</option>'+
+        '<option value="en"'+(hgIstEnglisch()?' selected':'')+'>English</option>'+
+      '</select>'+
       '<div class="senden-zeile"><button id="vSpeichern" onclick="verbindungSpeichern()">Speichern und prüfen</button>'+
         '<span class="status" id="vStatus"></span></div>'+
-    '</div>';
+    '</div>');
   document.querySelectorAll('input[name=vmodus]').forEach(r=>{
     r.onchange=()=>{document.getElementById('sshFelder').style.display=
       (r.value==='ssh'&&r.checked)?'block':'none'};
@@ -37,22 +57,30 @@ async function verbindungEditor(){
 async function verbindungSpeichern(){
   const st=document.getElementById('vStatus'),bt=document.getElementById('vSpeichern');
   const modus=document.querySelector('input[name=vmodus]:checked').value;
-  bt.disabled=true;st.className='status';st.textContent='prüfe…';
+  bt.disabled=true;st.className='status';st.textContent=t('prüfe…');
   const r=await fetch('/api/verbindung',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({modus:modus,
       ssh_ziel:document.getElementById('vZiel')?.value.trim()||'',
       bilder_laden: !!document.getElementById('vBilder')?.checked,
+      uebersetzer:document.getElementById('vUebDienst')?.value||'',
+      uebersetzer_url:document.getElementById('vUebUrl')?.value.trim()||'',
+      uebersetzer_modell:document.getElementById('vUebModell')?.value.trim()||'',
+      uebersetzer_ziel:document.getElementById('vUebZiel')?.value.trim()||'Deutsch',
       himalaya_pfad:document.getElementById('vPfad')?.value.trim()||'himalaya'})});
   const d=await r.json();
   bt.disabled=false;
+  const sprache=document.getElementById('vSprache');
+  if(sprache && sprache.value!==hgSprache()){hgSpracheSetzen(sprache.value);return}
   if(d.error){st.className='status fehler';st.textContent=d.error;return}
   if(d.erreichbar){
     st.className='status ok';
-    st.textContent='Verbunden — '+d.konten+' Konto'+(d.konten===1?'':'en')+' gefunden. Lade neu…';
+    st.textContent=hgIstEnglisch()
+      ?('Connected — '+d.konten+' account'+(d.konten===1?'':'s')+' found. Reloading…')
+      :('Verbunden — '+d.konten+' Konto'+(d.konten===1?'':'en')+' gefunden. Lade neu…');
     setTimeout(()=>{document.getElementById('kontenliste').innerHTML='lade…';ladeKonten()},1200);
   }else{
     st.className='status fehler';
-    st.textContent='Gespeichert, aber keine Verbindung: '+d.meldung;
+    st.textContent=t('Gespeichert, aber keine Verbindung: ')+d.meldung;
   }
 }
 async function ladeKonten(){
@@ -62,14 +90,14 @@ async function ladeKonten(){
   // ersten Start: dann gehoert der Einrichtungsassistent hin, nicht der
   // rohe Fehlertext von himalaya.
   const keineKonfig = d.error && /no configuration|config.*not found/i.test(d.error);
-  if(d.error && !keineKonfig){el.textContent='Fehler: '+d.error;return}
+  if(d.error && !keineKonfig){el.textContent=t('Fehler: ')+d.error;return}
   el.innerHTML='';
   if(keineKonfig || !(d.accounts||[]).length){kontoAssistent();return}
   (d.accounts||[]).forEach(a=>{
     const div=document.createElement('div');
     div.className='konto';div.dataset.name=a.name;
     div.innerHTML='<span class="kontoname">'+esc(a.name)+'</span>'+
-      (a.default?'<span class="standard" title="Standardkonto">★</span>':'');
+      (a.default?'<span class="standard" title="'+t('Standardkonto')+'">★</span>':'');
     div.onclick=()=>waehleKonto(a.name,div);
     el.appendChild(div);
   });
@@ -78,7 +106,7 @@ async function ladeKonten(){
 /* ---------------------------------------------------------------- Konten */
 async function kontoAssistent(){
   const box=document.getElementById('lesen');
-  box.innerHTML='<h2>Konto einrichten</h2>'+
+  box.innerHTML=ui('<h2>Konto einrichten</h2>'+
     '<div class="hinweis" style="padding:0 0 14px">Trag deine E-Mail-Adresse und das Passwort ein — '+
     'die Servereinstellungen erkennt die App meist selbst. Nichts hiervon verlässt deinen Rechner.</div>'+
     '<div class="verfassen" style="border-top:0;padding-top:0">'+
@@ -95,7 +123,7 @@ async function kontoAssistent(){
       '</details>'+
       '<div class="senden-zeile"><button id="kSpeichern" onclick="kontoSpeichern()">Konto hinzufügen</button>'+
         '<span class="status" id="kStatus"></span></div>'+
-    '</div>';
+    '</div>');
   const mail=document.getElementById('kEmail');
   mail.addEventListener('blur',async()=>{
     const adresse=mail.value.trim();
@@ -129,15 +157,18 @@ async function kontoSpeichern(){
     smtp_port:document.getElementById('kSmtpPort').value.trim()||465
   };
   if(!daten.email||!daten.passwort){
-    st.className='status fehler';st.textContent='E-Mail und Passwort sind nötig.';return;
+    st.className='status fehler';st.textContent=t('E-Mail und Passwort sind nötig.');return;
   }
-  bt.disabled=true;st.className='status';st.textContent='prüfe Zugangsdaten…';
+  bt.disabled=true;st.className='status';st.textContent=t('prüfe Zugangsdaten…');
   const r=await fetch('/api/konto/anlegen',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify(daten)});
   const d=await r.json();
   bt.disabled=false;
   if(d.error){st.className='status fehler';st.textContent=d.error;return}
-  st.className='status ok';st.textContent='Konto „'+d.name+'" eingerichtet. Lade neu…';
+  st.className='status ok';
+  st.textContent=hgIstEnglisch()
+    ?('Account “'+d.name+'” set up. Reloading…')
+    :('Konto „'+d.name+'" eingerichtet. Lade neu…');
   setTimeout(()=>{document.getElementById('kontenliste').innerHTML='lade…';ladeKonten()},1200);
 }
 async function waehleKonto(name,el){
@@ -172,27 +203,36 @@ async function ladeListe(){
   box.querySelectorAll('.mail,.ladehinweis').forEach(m=>m.remove());
   const d=await hole('/api/list?account='+encodeURIComponent(konto)+
                      '&mailbox='+encodeURIComponent(ordner));
-  if(d.error){box.insertAdjacentHTML('beforeend',
-    '<div class="hinweis ladehinweis">Fehler: '+esc(d.error)+'</div>');return}
+  if(d.error){box.insertAdjacentHTML('beforeend',ui(
+    '<div class="hinweis ladehinweis">Fehler: '+esc(d.error)+'</div>'));return}
   (d.envelopes||[]).forEach(e=>box.appendChild(mailZeile(e)));
   if(!(d.envelopes||[]).length)
-    box.insertAdjacentHTML('beforeend','<div class="hinweis ladehinweis">Keine Nachrichten</div>');
+    box.insertAdjacentHTML('beforeend',ui('<div class="hinweis ladehinweis">Keine Nachrichten</div>'));
 }
 const ORDNER_DE={'inbox':'Posteingang','sent':'Gesendet','sent items':'Gesendet',
  'sent messages':'Gesendet','drafts':'Entwürfe','trash':'Papierkorb',
  'deleted items':'Papierkorb','junk':'Spam','junk mail':'Spam','spam':'Spam',
  'archive':'Archiv','archives':'Archiv','outbox':'Postausgang'};
-function ordnerName(name){return ORDNER_DE[(name||'').toLowerCase()]||name}
+const ORDNER_EN={'inbox':'Inbox','sent':'Sent','sent items':'Sent',
+ 'sent messages':'Sent','drafts':'Drafts','trash':'Trash',
+ 'deleted items':'Trash','junk':'Junk','junk mail':'Junk','spam':'Junk',
+ 'archive':'Archive','archives':'Archive','outbox':'Outbox'};
+function ordnerName(name){
+  const k=(name||'').toLowerCase();
+  const tabelle=hgIstEnglisch()?ORDNER_EN:ORDNER_DE;
+  return tabelle[k]||name;
+}
 function zeitKurz(iso){
   const d=new Date(iso);
   if(isNaN(d))return (iso||'').slice(11,16);
   const jetzt=new Date();
   const gleichTag=d.toDateString()===jetzt.toDateString();
   const gestern=new Date(jetzt); gestern.setDate(jetzt.getDate()-1);
-  if(gleichTag)return d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
-  if(d.toDateString()===gestern.toDateString())return 'gestern';
-  if(jetzt-d<6*86400000)return d.toLocaleDateString('de-DE',{weekday:'short'})+'.';
-  return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'});
+  const sprache=hgDatumLocale();
+  if(gleichTag)return d.toLocaleTimeString(sprache,{hour:'2-digit',minute:'2-digit'});
+  if(d.toDateString()===gestern.toDateString())return t('gestern');
+  if(jetzt-d<6*86400000)return d.toLocaleDateString(sprache,{weekday:'short'})+'.';
+  return d.toLocaleDateString(sprache,{day:'2-digit',month:'2-digit',year:'2-digit'});
 }
 function absenderKopf(von){
   // "Anna Berger <a@b.de>" -> Name fett, Adresse in Monospace, per Klick kopierbar.
@@ -207,7 +247,7 @@ function absenderKopf(von){
 }
 function adresseKopieren(el){
   const text=el.textContent;
-  const fertig=()=>{const alt=el.textContent;el.textContent='kopiert';el.classList.add('kopiert');
+  const fertig=()=>{const alt=el.textContent;el.textContent=t('kopiert');el.classList.add('kopiert');
     setTimeout(()=>{el.textContent=alt;el.classList.remove('kopiert')},1100)};
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(text).then(fertig).catch(()=>{});
@@ -220,8 +260,9 @@ function adresseKopieren(el){
 function zeitLang(iso){
   const d=new Date(iso);
   if(isNaN(d))return iso||'';
-  return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})+
-         ', '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr';
+  const sprache=hgDatumLocale();
+  return d.toLocaleDateString(sprache,{day:'2-digit',month:'2-digit',year:'numeric'})+
+         ', '+d.toLocaleTimeString(sprache,{hour:'2-digit',minute:'2-digit'})+t(' Uhr');
 }
 function initialen(name){
   const sauber=(name||'?').replace(/["'<>,]/g,'').trim();
@@ -237,13 +278,13 @@ function mailZeile(e){
   // Zur Spam-Erkennung gehoert die echte Adresse, nicht nur der Anzeigename:
   // jeder kann sich "Sparkasse" nennen. Steht ein Name da, wird die Adresse
   // darunter gezeigt; ohne Namen ist sie selbst die erste Zeile.
-  const oben=name||adresse||'(unbekannt)';
+  const oben=name||adresse||t('(unbekannt)');
   const div=document.createElement('div');
   div.className='mail'+((e.flags||[]).length?'':' ungelesen');
   div.innerHTML='<div class="von"><span title="'+esc(oben)+'">'+esc(oben)+'</span>'+
       '<span>'+esc(zeitKurz(e.date))+'</span></div>'+
     (name&&adresse?'<div class="adresse" title="'+esc(adresse)+'">'+esc(adresse)+'</div>':'')+
-    '<div class="betreff">'+esc(e.subject||'(ohne Betreff)')+'</div>';
+    '<div class="betreff">'+esc(e.subject||t('(ohne Betreff)'))+'</div>';
   div.onclick=()=>lese(e.id,div,e);
   return div;
 }
@@ -252,10 +293,10 @@ async function lese(id,el,env){
   document.querySelectorAll('.mail').forEach(m=>m.classList.remove('aktiv'));
   if(el)el.classList.add('aktiv');
   const box=document.getElementById('lesen');
-  box.innerHTML='<div class="hinweis">lade…</div>';
+  box.innerHTML=ui('<div class="hinweis">lade…</div>');
   const d=await hole('/api/read?account='+encodeURIComponent(konto)+'&id='+encodeURIComponent(id)+
                      '&mailbox='+encodeURIComponent(ordner));
-  if(d.error){box.innerHTML='<div class="hinweis">Fehler: '+esc(d.error)+'</div>';return}
+  if(d.error){box.innerHTML=ui('<div class="hinweis">Fehler: '+esc(d.error)+'</div>');return}
   // Betreff/Absender aus der Liste als Rueckfall: die Lese-API liefert sie
   // gelegentlich nicht (anderer Ordnername, exotische Mail).
   const envBetreff=(env&&env.subject)||'';
@@ -264,21 +305,23 @@ async function lese(id,el,env){
   const von=d.from||envVon||'';
   let anhangHtml='';
   if((d.anhaenge||[]).length){
-    anhangHtml='<div class="anhaenge"><b>Anhänge</b><br>'+
+    anhangHtml='<div class="anhaenge"><b>'+t('Anhänge')+'</b><br>'+
       d.anhaenge.map((a,i)=>'<a href="/api/attachment?account='+encodeURIComponent(konto)+
         '&id='+encodeURIComponent(id)+'&index='+i+'&mailbox='+encodeURIComponent(ordner)+'">'+
-        esc(a.name||('Anhang '+(i+1)))+'</a>').join('')+'</div>';
+        esc(a.name||(t('Anhang ')+(i+1)))+'</a>').join('')+'</div>';
   }
-  box.innerHTML='<h2>'+esc(betreff||'(ohne Betreff)')+'</h2>'+
+  box.innerHTML='<h2>'+esc(betreff||t('(ohne Betreff)'))+'</h2>'+
     '<div class="meta">'+absenderKopf(von)+'  ·  '+esc(zeitLang(d.date))+'</div>'+
     anhangHtml+
-    '<div class="knopfleiste">'+
+    ui('<div class="knopfleiste">'+
       '<button onclick="antworten()" title="Antworten (A)">\u21a9 Antworten</button>'+
       '<button onclick="weiterleiten()" title="Weiterleiten (W)">\u21aa Weiterleiten</button>'+
       '<button onclick="alsGelesen()" title="Als gelesen oder ungelesen markieren">\u25cf Gelesen</button>'+
       '<button onclick="loeschen()" title="In den Papierkorb (Entf)">\u2715 Löschen</button>'+
-    '</div>'+
+      '<button onclick="uebersetzen()" title="Nachricht übersetzen">\u21c4 Übersetzen</button>'+
+    '</div>')+
     mailansicht(d)+
+    '<div id="uebersetzung"></div>'+
     '<div id="editorbereich"></div>';
   window._letzte={subject:betreff, from:von, date:d.date||'', body:d.body||''};
   // Gelesene Nachricht nicht weiter als ungelesen anzeigen
@@ -289,10 +332,10 @@ async function lese(id,el,env){
   }
 }
 function editorHtml(){
-  return '<div class="verfassen">'+
-    '<input id="fAn" placeholder="An (mehrere mit Komma trennen)">'+
+  return ui('<div class="verfassen">'+
+    '<input id="fAn" spellcheck="false" autocapitalize="off" placeholder="An (mehrere mit Komma trennen)">'+
     '<input id="fCc" placeholder="Cc (optional)">'+
-    '<input id="fBetreff" placeholder="Betreff">'+
+    '<input id="fBetreff" spellcheck="true" placeholder="Betreff">'+
     '<div class="toolbar">'+
       '<button onmousedown="event.preventDefault();fmt(\'bold\')" title="Fett"><b>B</b></button>'+
       '<button onmousedown="event.preventDefault();fmt(\'italic\')" title="Kursiv"><i>I</i></button>'+
@@ -311,14 +354,14 @@ function editorHtml(){
       '<button onmousedown="event.preventDefault();linkEinfuegen()" title="Link">Link</button>'+
       '<button onmousedown="event.preventDefault();fmt(\'removeFormat\')" title="Formatierung entfernen">×</button>'+
     '</div>'+
-    '<div id="editor" contenteditable="true"></div>'+
+    '<div id="editor" contenteditable="true" spellcheck="true" lang="de"></div>'+
     '<div class="senden-zeile"><button id="sendenbtn" onclick="senden()">Senden</button>'+
-      '<span class="status" id="sendestatus"></span></div></div>';
+      '<span class="status" id="sendestatus"></span></div></div>');
 }
 function fmt(b){document.getElementById('editor').focus();document.execCommand(b,false,null)}
 function fmtWert(b,w){document.getElementById('editor').focus();document.execCommand(b,false,w)}
 function linkEinfuegen(){
-  const u=prompt('Adresse (https://…):');if(!u)return;
+  const u=prompt(t('Adresse (https://…):'));if(!u)return;
   document.getElementById('editor').focus();document.execCommand('createLink',false,u);
 }
 async function sigFuer(){
@@ -345,7 +388,7 @@ async function oeffneEditor(v){
 }
 function zitat(){
   const m=window._letzte||{};
-  return '<p><br></p><p style="color:#888">----- Ursprüngliche Nachricht -----<br>'+
+  return '<p><br></p><p style="color:#888">'+t('----- Ursprüngliche Nachricht -----')+'<br>'+
     esc((m.from||'')+' · '+(m.date||'')).replace(/\n/g,'<br>')+'</p>'+
     '<blockquote style="border-left:3px solid #ccc;margin-left:0;padding-left:10px;color:#555">'+
     esc((m.body||'').slice(0,4000)).replace(/\n/g,'<br>')+'</blockquote>';
@@ -362,19 +405,19 @@ function weiterleiten(){
   oeffneEditor({an:'',betreff:'Fwd: '+(m.subject||''),text:zitat()});
 }
 function neueMail(){
-  if(!konto){alert('Erst ein Konto wählen');return}
+  if(!konto){alert(t('Erst ein Konto wählen'));return}
   mail=null;
-  document.getElementById('lesen').innerHTML='<h2>Neue Nachricht</h2><div id="editorbereich"></div>';
+  document.getElementById('lesen').innerHTML=ui('<h2>Neue Nachricht</h2><div id="editorbereich"></div>');
   oeffneEditor({});
 }
 async function signaturBearbeiten(){
   const box=document.getElementById('lesen');
-  box.innerHTML='<div class="hinweis">lade…</div>';
+  box.innerHTML=ui('<div class="hinweis">lade…</div>');
   const d=await hole('/api/signaturen');
   const gruppen=Object.entries(d.gruppen||{}).sort((a,b)=>b[1].konten.length-a[1].konten.length);
-  let html='<h2>Signaturen</h2>'+
+  let html=ui('<h2>Signaturen</h2>'+
     '<div class="hinweis" style="padding:0 0 12px">Eine Signatur gilt für alle Konten einer Gruppe — '+
-    'die Gruppen ergeben sich aus dem Namensanfang (dekohuwelen-*, smartystech-* …).</div>';
+    'die Gruppen ergeben sich aus dem Namensanfang (dekohuwelen-*, smartystech-* …).</div>');
   if(!gruppen.length){html+='<div class="hinweis">Keine Konten gefunden.</div>';box.innerHTML=html;return}
   html+='<div id="gruppenliste">';
   gruppen.forEach(([g,info])=>{
@@ -383,10 +426,10 @@ async function signaturBearbeiten(){
       '<div style="display:flex;justify-content:space-between;gap:10px">'+
         '<b>'+esc(g)+'</b>'+
         '<span style="font-size:12px;color:'+(gesetzt?'#5fd08a':'#ff7a7a')+'">'+
-          (gesetzt?'Signatur gesetzt':'keine Signatur')+'</span>'+
+          (gesetzt?t('Signatur gesetzt'):t('keine Signatur'))+'</span>'+
       '</div>'+
       '<div style="font-size:12px;color:var(--muted);margin-top:2px">'+
-        info.konten.length+(info.konten.length===1?' Konto: ':' Konten: ')+esc(info.konten.join(', '))+'</div>'+
+        info.konten.length+t(info.konten.length===1?' Konto: ':' Konten: ')+esc(info.konten.join(', '))+'</div>'+
     '</div>';
   });
   html+='</div><div id="signaturDetail"></div>';
@@ -396,7 +439,7 @@ async function signaturEdit(gruppe){
   const d=await hole('/api/signaturen');
   const info=(d.gruppen||{})[gruppe]||{konten:[],html:''};
   const detail=document.getElementById('signaturDetail');
-  detail.innerHTML='<h2 style="margin-top:24px">Signatur: '+esc(gruppe)+'</h2>'+
+  detail.innerHTML=ui('<h2 style="margin-top:24px">Signatur: '+esc(gruppe)+'</h2>'+
     '<div class="hinweis" style="padding:0 0 10px">Gilt für: '+esc(info.konten.join(', '))+
     '. Feld leeren und speichern = keine Signatur für diese Gruppe.</div>'+
     '<div class="toolbar">'+
@@ -419,7 +462,7 @@ async function signaturEdit(gruppe){
       '<button onclick="signaturSpeichern(\''+esc(gruppe)+'\')">Speichern</button>'+
       '<button onclick="signaturVorschau()" style="background:#1c2740;color:var(--text);border:1px solid var(--rand)">Vorschau</button>'+
       '<span class="status" id="sigStatus"></span></div>'+
-    '<div id="sigVorschau" style="display:none;margin-top:14px;padding:14px;background:#fff;color:#111;border-radius:5px"></div>';
+    '<div id="sigVorschau" style="display:none;margin-top:14px;padding:14px;background:#fff;color:#111;border-radius:5px"></div>');
   const ed=document.getElementById('signaturEditor');
   ed.innerHTML=info.html||(''+(
     gruppe==='dekojuwelen'?'<p><b>Andreas Smarz</b><br><span style="color:#c00000">dekojuwelen.de</span></p>':
@@ -438,13 +481,13 @@ function signaturVorschau(){
 async function signaturSpeichern(gruppe){
   const st=document.getElementById('sigStatus');
   const html=document.getElementById('signaturEditor').innerHTML;
-  st.className='status';st.textContent='speichere…';
+  st.className='status';st.textContent=t('speichere…');
   const r=await fetch('/api/signatur',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({gruppe:gruppe,html:html})});
   const d=await r.json();
-  if(d.error){st.className='status fehler';st.textContent='Fehler: '+d.error;return}
+  if(d.error){st.className='status fehler';st.textContent=t('Fehler: ')+d.error;return}
   signaturCache=null;
-  st.className='status ok';st.textContent='Gespeichert — gilt für alle Konten dieser Gruppe.';
+  st.className='status ok';st.textContent=t('Gespeichert — gilt für alle Konten dieser Gruppe.');
 }
 async function senden(){
   if(!konto)return;
@@ -453,17 +496,17 @@ async function senden(){
   const cc=document.getElementById('fCc').value.trim();
   const betreff=document.getElementById('fBetreff').value.trim();
   const html=document.getElementById('editor').innerHTML;
-  if(!an){st.className='status fehler';st.textContent='Empfänger fehlt';return}
-  bt.disabled=true;st.className='status';st.textContent='sende…';
+  if(!an){st.className='status fehler';st.textContent=t('Empfänger fehlt');return}
+  bt.disabled=true;st.className='status';st.textContent=t('sende…');
   try{
     const r=await fetch('/api/send',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({account:konto,an:an,cc:cc,betreff:betreff,html:html,
                            antwortAuf:mail,ordner:ordner})});
     const d=await r.json();
-    if(d.error){st.className='status fehler';st.textContent='Fehler: '+d.error;bt.disabled=false;return}
-    st.className='status ok';st.textContent='Gesendet.';
+    if(d.error){st.className='status fehler';st.textContent=t('Fehler: ')+d.error;bt.disabled=false;return}
+    st.className='status ok';st.textContent=t('Gesendet.');
     setTimeout(()=>{const b=document.getElementById('editorbereich');if(b)b.innerHTML=''},2500);
-  }catch(e){st.className='status fehler';st.textContent='Fehler: '+e;bt.disabled=false}
+  }catch(e){st.className='status fehler';st.textContent=t('Fehler: ')+e;bt.disabled=false}
 }
 async function alsGelesen(){
   if(!mail)return;
@@ -473,12 +516,12 @@ async function alsGelesen(){
 }
 async function loeschen(){
   if(!mail)return;
-  if(!confirm('Nachricht löschen?'))return;
+  if(!confirm(t('Nachricht löschen?')))return;
   const r=await fetch('/api/delete',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({account:konto,id:mail,mailbox:ordner})});
   const d=await r.json();
-  if(d.error){alert('Fehler: '+d.error);return}
-  document.getElementById('lesen').innerHTML='<div class="hinweis">Gelöscht.</div>';
+  if(d.error){alert(t('Fehler: ')+d.error);return}
+  document.getElementById('lesen').innerHTML=ui('<div class="hinweis">Gelöscht.</div>');
   ladeListe();
 }
 let suchTimer=null;
@@ -490,13 +533,13 @@ document.getElementById('suche').addEventListener('input',e=>{
     const box=document.getElementById('liste');
     box.querySelectorAll('.mail,.ladehinweis').forEach(m=>m.remove());
     if(!q){ladeListe();return}
-    document.getElementById('listenkopf').textContent=konto+' · Suche';
+    document.getElementById('listenkopf').textContent=konto+t(' · Suche');
     const d=await hole('/api/search?account='+encodeURIComponent(konto)+'&q='+encodeURIComponent(q));
-    if(d.error){box.insertAdjacentHTML('beforeend',
-      '<div class="hinweis ladehinweis">Fehler: '+esc(d.error)+'</div>');return}
+    if(d.error){box.insertAdjacentHTML('beforeend',ui(
+      '<div class="hinweis ladehinweis">Fehler: '+esc(d.error)+'</div>'));return}
     (d.envelopes||[]).forEach(x=>box.appendChild(mailZeile(x)));
     if(!(d.envelopes||[]).length)
-      box.insertAdjacentHTML('beforeend','<div class="hinweis ladehinweis">Nichts gefunden</div>');
+      box.insertAdjacentHTML('beforeend',ui('<div class="hinweis ladehinweis">Nichts gefunden</div>'));
   },450);
 });
 ladeKonten();
@@ -554,4 +597,40 @@ function mailhtmlHoehe(rahmen){
   // feste Hoehe und einen eigenen Scrollbalken — so verhalten sich
   // Mailprogramme auch, und sehr lange Newsletter bleiben bedienbar.
   rahmen.style.height = "";
+}
+
+
+/* ---- Uebersetzer ------------------------------------------------------ */
+async function uebersetzen(){
+  const box=document.getElementById('uebersetzung');
+  if(!box)return;
+  const m=window._letzte||{};
+  const text=(m.body||'').trim();
+  if(!text){
+    box.innerHTML=ui('<div class="uebersetzung fehler">Kein Text zum Übersetzen gefunden.</div>');
+    return;
+  }
+  box.innerHTML=ui('<div class="uebersetzung">übersetze…</div>');
+  let d;
+  try{
+    const r=await fetch('/api/uebersetzen',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text:text})});
+    d=await r.json();
+  }catch(e){
+    box.innerHTML=ui('<div class="uebersetzung fehler">Der Dienst antwortet nicht.</div>');
+    return;
+  }
+  if(d.error){
+    box.innerHTML='<div class="uebersetzung fehler">'+esc(d.error)+'</div>';
+    return;
+  }
+  box.innerHTML=ui('<div class="uebersetzung"><div class="ueberkopf">Übersetzung'+
+    '<button class="ueberschliessen" onclick="uebersetzungSchliessen()">schließen</button>'+
+    '</div>')+'<pre>'+esc(d.uebersetzt||'')+'</pre></div>';
+}
+
+function uebersetzungSchliessen(){
+  const b=document.getElementById('uebersetzung');
+  if(b)b.innerHTML='';
 }
