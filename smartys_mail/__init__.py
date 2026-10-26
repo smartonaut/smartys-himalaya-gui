@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 """Smartys Himalaya GUI — grafische Oberflaeche fuer himalaya."""
-__version__ = "0.1.0"
+__version__ = "0.3.1"
