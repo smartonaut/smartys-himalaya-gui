@@ -54,9 +54,31 @@ def _mit_pywebview(url, titel):
     # generisches Python-Symbol — die App waere nicht als Smartys-App
     # erkennbar.
     logo = _logo_pfad()
-    webview.create_window(titel, url, width=1280, height=820,
-                          min_size=(900, 600))
-    webview.start(icon=logo) if logo else webview.start()
+    fenster = webview.create_window(titel, url, width=1280, height=820,
+                                    min_size=(900, 600))
+
+    def rechtschreibung_ein():
+        """Rechtschreibpruefung einschalten, soweit die Laufzeit es zulaesst.
+
+        pywebview gibt die Einstellungen der Ansicht nicht portabel frei;
+        unter Linux geht es ueber das native WebKitGTK-Widget. WebView2 unter
+        Windows prueft ohnehin selbst. Fehler bleiben folgenlos.
+        """
+        try:
+            gui = getattr(fenster, "gui", None)
+            if gui is None or not hasattr(gui, "get_settings"):
+                return
+            einst = gui.get_settings()
+            einst.set_property("enable-spell-checking", True)
+            einst.set_property("spell-checking-languages",
+                               ["de_DE", "de", "en_US"])
+        except Exception:  # noqa: BLE001
+            pass
+
+    if logo:
+        webview.start(icon=logo, func=rechtschreibung_ein)
+    else:
+        webview.start(func=rechtschreibung_ein)
     return True
 
 
@@ -87,6 +109,14 @@ def _mit_gtk(url, titel):
     # Kein Kontextmenue des Browsers, kein Entwicklerwerkzeug im Alltag
     einstellungen.set_property("enable-developer-extras", False)
     einstellungen.set_property("enable-plugins", False)
+    # Rechtschreibpruefung im Verfassen-Fenster. WebKit nutzt dafuer
+    # enchant/hunspell; fehlen die Woerterbuecher, bleibt sie einfach aus.
+    try:
+        einstellungen.set_property("enable-spell-checking", True)
+        einstellungen.set_property("spell-checking-languages",
+                                    ["de_DE", "de", "en_US"])
+    except Exception:  # noqa: BLE001 - fehlende Woerterbuecher sind kein Fehler
+        pass
     web.load_uri(url)
     fenster.add(web)
     fenster.show_all()

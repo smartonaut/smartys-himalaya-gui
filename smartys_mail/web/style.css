@@ -539,3 +539,14 @@ details summary:hover { color: var(--gold); }
 .mailhtml{width:100%;height:min(72vh,900px);min-height:360px;border:0;
   background:transparent;border-radius:8px;display:block;margin:4px 0 10px;
   overflow:auto}
+
+/* Uebersetzung unter der Nachricht */
+.uebersetzung{margin:10px 0 14px;padding:12px 14px;border-left:3px solid #d4af37;
+  background:rgba(212,175,55,.07);border-radius:6px}
+.uebersetzung .ueberkopf{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;
+  color:#d4af37;margin-bottom:8px}
+.uebersetzung pre{white-space:pre-wrap;word-break:break-word;margin:0;
+  font:inherit;color:#e8eef6}
+.uebersetzung.fehler{border-left-color:#e05a5a;background:rgba(224,90,90,.08);color:#ffb3b3}
+.ueberschliessen{background:none;border:0;color:#8fa1b5;cursor:pointer;font-size:11px;
+  text-decoration:underline;padding:0 0 0 10px;text-transform:none;letter-spacing:0}

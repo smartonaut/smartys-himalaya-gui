@@ -4,11 +4,11 @@
 # Bewusst KEINE Installation nach %{python3_sitelib}: der Pfad unterscheidet
 # sich zwischen den Distributionen (Fedora/RHEL: /usr/lib64/python3.x/...,
 # SUSE: /usr/lib/python3/site-packages, Debian: /usr/lib/python3/dist-packages).
-# Die Anwendung liegt daher als reine Daten unter %{_datadir}/%{name}, die
+# Die Anwendung liegt daher als reine Daten unter /usr/share/smartys-himalaya-gui, die
 # Starter setzen den Pfad selbst. Damit laeuft ein und dasselbe Paket ueberall.
 
 Name:           smartys-himalaya-gui
-Version:        0.3.1
+Version:        %{?_version}%{!?_version:0.4.0}
 Release:        1%{?dist}
 Summary:        Grafische Oberflaeche fuer himalaya
 License:        MIT

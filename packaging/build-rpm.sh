@@ -35,7 +35,8 @@ tar czf "$TOP/SOURCES/$NAME-$VERSION.tar.gz" -C "$TOP/stage" "$NAME-$VERSION"
 cp "$HIER/packaging/$NAME.rpm.spec" "$TOP/SPECS/"
 
 echo "Baue $NAME $VERSION"
-rpmbuild -bb --define "_topdir $TOP" "$TOP/SPECS/$NAME.rpm.spec"
+rpmbuild -bb --define "_topdir $TOP" --define "_version $VERSION" \
+    "$TOP/SPECS/$NAME.rpm.spec"
 
 RPM=$(find "$TOP/RPMS" -name '*.rpm' | head -1)
 [ -n "$RPM" ] || { echo "kein RPM erzeugt" >&2; exit 1; }

@@ -24,6 +24,13 @@ STANDARD = {
     # Externe Bilder in HTML-Mails laden? Standard: nein. Ein Zaehlpixel
     # verraet dem Absender sofort, dass und wann die Mail gelesen wurde.
     "bilder_laden": False,
+
+    # Uebersetzer. "" = aus, "ollama" = lokales Sprachmodell,
+    # "libretranslate" = Dienst mit LibreTranslate-Schnittstelle.
+    "uebersetzer": "",
+    "uebersetzer_url": "",
+    "uebersetzer_modell": "",
+    "uebersetzer_ziel": "Deutsch",
 }
 
 
@@ -90,8 +97,15 @@ def speichern(daten):
     if modus == "ssh" and not ziel:
         return "Ohne Rechnerangabe (z.B. benutzer@192.168.1.50) kein SSH-Betrieb"
     pfad = (daten.get("himalaya_pfad") or "himalaya").strip() or "himalaya"
+    dienst = (daten.get("uebersetzer") or "").strip()
+    if dienst not in ("", "ollama", "libretranslate"):
+        return "Unbekannter Uebersetzer-Dienst"
     neu = {"modus": modus, "ssh_ziel": ziel, "himalaya_pfad": pfad,
-           "bilder_laden": bool(daten.get("bilder_laden"))}
+           "bilder_laden": bool(daten.get("bilder_laden")),
+           "uebersetzer": dienst,
+           "uebersetzer_url": (daten.get("uebersetzer_url") or "").strip(),
+           "uebersetzer_modell": (daten.get("uebersetzer_modell") or "").strip(),
+           "uebersetzer_ziel": (daten.get("uebersetzer_ziel") or "Deutsch").strip()}
     try:
         os.makedirs(os.path.dirname(_datei()), exist_ok=True)
         with open(_datei(), "w", encoding="utf-8") as f:
