@@ -20,6 +20,26 @@ BIND = os.environ.get("SMARTYS_MAIL_BIND", "127.0.0.1")
 WEB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
 HIMALAYA_CONFIG = pfade.himalaya_config()
 DOWNLOAD_TMP = os.path.join(pfade.datenordner(), "downloads")
+
+# Ordner, in die "Loeschen" verschieben kann. Zuerst der in der
+# himalaya-Config hinterlegte Name, danach die ueblichen Schreibweisen.
+# Grund: himalaya kennt den echten Papierkorb-Namen eines Servers nicht und
+# scheitert sonst mit "Destination mailbox does not exist".
+_PAPIERKORB = (
+    "Deleted Items", "Papierkorb", "Trash", "Gelöschte Elemente",
+    "Deleted Messages", "INBOX.Trash", "Deleted",
+)
+
+
+def alias_papierkorb(konto):
+    """mailbox.alias.trash des Kontos aus der himalaya-Config (oder None)."""
+    try:
+        with open(HIMALAYA_CONFIG, "rb") as f:
+            daten = tomllib.load(f)
+        konto_daten = daten.get("accounts", {}).get(konto, {})
+        return konto_daten.get("mailbox", {}).get("alias", {}).get("trash")
+    except Exception:  # noqa: BLE001
+        return None
 # Beispieldaten statt echter Postfaecher (Screenshots, Ausprobieren)
 DEMO = os.environ.get("SMARTYS_MAIL_DEMO") == "1"
 
@@ -126,8 +146,34 @@ class Handler(BaseHTTPRequestHandler):
         box = d.get("mailbox") or "Inbox"
         if not (konto and mid):
             return self._json({"error": "Konto und Mail noetig"})
-        return self._json(himalaya.json_aufruf(
-            ["message", "delete", "-a", konto, "-m", box, mid]))
+
+        antwort = himalaya.json_aufruf(
+            ["message", "delete", "-a", konto, "-m", box, mid])
+        if "error" not in antwort:
+            return self._json({"ok": True})
+
+        # himalaya loescht in den in seiner Config hinterlegten Papierkorb.
+        # Stimmt der Name nicht mit dem Server ueberein, kommt
+        # "Destination mailbox does not exist" — dann selbst verschieben.
+        if "Destination mailbox does not exist" not in str(antwort.get("error", "")):
+            return self._json(antwort)
+
+        kandidaten = []
+        alias = alias_papierkorb(konto)
+        if alias:
+            kandidaten.append(alias)
+        kandidaten += [k for k in _PAPIERKORB if k not in kandidaten]
+
+        for ziel in kandidaten:
+            mv = himalaya.json_aufruf(
+                ["message", "move", "-a", konto, "-f", box, "-t", ziel, mid])
+            if "error" not in mv:
+                return self._json({"ok": True, "verschoben_nach": ziel})
+
+        return self._json({
+            "error": "Kein Papierkorb-Ordner gefunden. In der "
+                     "himalaya-Konfiguration mailbox.alias.trash auf den "
+                     "echten Ordnernamen des Servers setzen."})
 
     def _signatur_setzen(self, d):
         gruppe = (d.get("gruppe") or "").strip()
