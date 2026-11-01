@@ -128,20 +128,28 @@ class Handler(BaseHTTPRequestHandler):
         box = d.get("mailbox") or "Inbox"
         if not (konto and mid):
             return self._json({"error": "Konto und Mail noetig"})
-        # gelesen=true setzt "seen" gezielt (beim Oeffnen einer Mail).
-        # Ohne die Angabe wird umgeschaltet (Knopf in der Oberflaeche).
-        if d.get("gelesen"):
-            antwort = himalaya.json_aufruf(
-                ["flag", "add", "-a", konto, "-m", box, "seen", mid])
-            if "error" in antwort:
-                return self._json(antwort)
-            return self._json({"ok": True, "gelesen": True})
-        antwort = himalaya.json_aufruf(["flag", "add", "-a", konto, "-m", box, "seen", mid])
+        # Zielzustand: Die Oberflaeche schickt gelesen=true (beim Oeffnen) oder
+        # gelesen=false (Knopf). Fehlt die Angabe, gilt "gelesen" — so verhielten
+        # sich aeltere Aufrufer.
+        #
+        # himalaya 2.x verlangt das Flag als Option (--flag seen), NICHT als
+        # Positionsargument: `flag add ... seen <id>` scheitert mit
+        # "required arguments were not provided: --flag".
+        #
+        # Ein blosses add/remove-Umschalten taugt nicht: Ein add auf ein bereits
+        # gesetztes Flag ist bei IMAP idempotent und meldet keinen Fehler, der
+        # remove-Zweig waere also nie erreichbar. Deshalb entscheidet der
+        # Aufrufer ueber den Zielzustand.
+        gelesen = d.get("gelesen")
+        if gelesen is None:
+            gelesen = True
+        gelesen = bool(gelesen)
+        aktion = "add" if gelesen else "remove"
+        antwort = himalaya.json_aufruf(
+            ["flag", aktion, "-a", konto, "-m", box, "--flag", "seen", mid])
         if "error" in antwort:
-            antwort = himalaya.json_aufruf(["flag", "remove", "-a", konto, "-m", box, "seen", mid])
-            if "error" in antwort:
-                return self._json(antwort)
-        return self._json({"ok": True})
+            return self._json(antwort)
+        return self._json({"ok": True, "gelesen": gelesen})
 
     def _loeschen(self, d):
         konto = (d.get("account") or "").strip()

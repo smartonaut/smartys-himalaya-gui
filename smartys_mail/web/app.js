@@ -271,6 +271,16 @@ function initialen(name){
   if(teile.length===1)return teile[0].slice(0,1).toUpperCase();
   return (teile[0][0]+teile[1][0]).toUpperCase();
 }
+function istGelesen(e){
+  // himalaya liefert flags entweder als Strings ("seen") oder als Objekte
+  // ({raw:"\\Seen", iana:"seen"}). Fruher wurde nur auf "flags nicht leer"
+  // geprueft — damit galt eine markierte, aber ungelesene Mail ($\Flagged ohne
+  // $\Seen) faelschlich als gelesen.
+  return (e.flags||[]).some(f=>{
+    const n=(typeof f==='string'?f:(f.iana||f.raw||'')).toLowerCase();
+    return n.indexOf('seen')>=0;
+  });
+}
 function mailZeile(e){
   const abs=(e.from&&e.from[0])||{};
   const name=(abs.name||'').trim();
@@ -280,7 +290,7 @@ function mailZeile(e){
   // darunter gezeigt; ohne Namen ist sie selbst die erste Zeile.
   const oben=name||adresse||t('(unbekannt)');
   const div=document.createElement('div');
-  div.className='mail'+((e.flags||[]).length?'':' ungelesen');
+  div.className='mail'+(istGelesen(e)?'':' ungelesen');
   div.innerHTML='<div class="von"><span title="'+esc(oben)+'">'+esc(oben)+'</span>'+
       '<span>'+esc(zeitKurz(e.date))+'</span></div>'+
     (name&&adresse?'<div class="adresse" title="'+esc(adresse)+'">'+esc(adresse)+'</div>':'')+
@@ -510,8 +520,19 @@ async function senden(){
 }
 async function alsGelesen(){
   if(!mail)return;
-  await fetch('/api/flag',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({account:konto,id:mail,mailbox:ordner})});
+  // Umschalten: Der Knopf soll gelesene Post ungelesen machen und umgekehrt.
+  // Frueher wurde ohne "gelesen" gesendet; der Server konnte daraus keinen
+  // Zielzustand ableiten und setzte faktisch immer nur "seen" (nie zurueck).
+  const zeile=document.querySelector('.mail.aktiv');
+  const jetztGelesen=!(zeile&&zeile.classList.contains('ungelesen'));
+  const ziel=!jetztGelesen;
+  const r=await fetch('/api/flag',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({account:konto,id:mail,mailbox:ordner,gelesen:ziel})});
+  const d=await r.json().catch(()=>({}));
+  if(d.error){alert(t('Fehler: ')+d.error);return}
+  if(zeile){
+    if(ziel)zeile.classList.remove('ungelesen');else zeile.classList.add('ungelesen');
+  }
   ladeListe();
 }
 async function loeschen(){

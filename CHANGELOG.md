@@ -4,6 +4,26 @@ Alle nennenswerten Änderungen an der Smartys Himalaya GUI. Format orientiert
 an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/) und
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.4.1] — 2026-11-01
+
+Schwerpunkt: Gelesen-Markierung reparieren.
+
+### Behoben
+
+- **Gelesene Mails sprangen nach einem Kontowechsel zurück auf ungelesen.**
+  Die Oberfläche rief `himalaya flag add ... seen <id>` auf — himalaya 2.x
+  verlangt das Flag aber als Option (`--flag seen`). Jeder Aufruf scheiterte
+  stillschweigend, die Mail blieb serverseitig ungelesen und erschien nach dem
+  Neuladen wieder mit Punkt.
+- **Der Knopf „Gelesen" konnte nur lesen, nie ungelesen machen.** Er schickte
+  keinen Zielzustand, der Server probierte „add", was bei IMAP auf ein bereits
+  gesetztes Flag folgenlos bleibt (idempotent) — der „remove"-Zweig war damit
+  unerreichbar. Jetzt schickt die Oberfläche den Zielzustand (`gelesen: true`
+  oder `false`), und der Server setzt genau diesen.
+- **Nur an `\Seen` erkennbar, ob eine Mail gelesen ist.** Die Liste stufte
+  jede Mail mit *irgendeinem* Flag als gelesen ein; eine markierte, aber
+  ungelesene Nachricht (`\Flagged` ohne `\Seen`) erschien dadurch falsch.
+
 ## [0.4.0] — 2026-10-26
 
 Schwerpunkt: Schreiben und Lesen in fremden Sprachen.
