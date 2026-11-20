@@ -15,7 +15,7 @@ async function verbindungEditor(){
       '<label style="display:block;margin-bottom:12px;color:#a3b1c2;font-size:12.5px">'+
         '<input type="radio" name="vmodus" value="ssh" '+(ssh?'checked':'')+'> Auf einem anderen Rechner (SSH)</label>'+
       '<div id="sshFelder" style="display:'+(ssh?'block':'none')+'">'+
-        '<input id="vZiel" placeholder="benutzer@rechner, z.B. benutzer@192.0.2.12" value="'+esc(v.ssh_ziel||'')+'">'+
+        '<input id="vZiel" placeholder="benutzer@rechner, z.B. benutzer@192.0.2.10" value="'+esc(v.ssh_ziel||'')+'">'+
         '<input id="vPfad" placeholder="Pfad zu himalaya dort (Standard: himalaya)" value="'+esc(v.himalaya_pfad||'himalaya')+'">'+
         '<div class="hinweis" style="padding:6px 0 10px;font-size:12px">Der öffentliche SSH-Schlüssel '+
           'dieses Rechners muss dort hinterlegt sein — sonst kommt keine Verbindung zustande.</div>'+
@@ -475,8 +475,6 @@ async function signaturEdit(gruppe){
     '<div id="sigVorschau" style="display:none;margin-top:14px;padding:14px;background:#fff;color:#111;border-radius:5px"></div>');
   const ed=document.getElementById('signaturEditor');
   ed.innerHTML=info.html||(''+(
-    gruppe==='dekojuwelen'?'<p><b>Andreas Smarz</b><br><span style="color:#c00000">dekojuwelen.de</span></p>':
-    gruppe==='smartystech'?'<p><b>Andreas Smarz</b><br>smartys.tech</p>':
     '<p><b>Dein Name</b><br>deine-domain.de</p>'));
   ed.focus();
   detail.scrollIntoView({behavior:'smooth',block:'start'});

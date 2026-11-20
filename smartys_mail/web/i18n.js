@@ -51,7 +51,7 @@ var HG_EN = {
   'Im zweiten Fall bleiben die Zugangsdaten dort, und hier wird nur ein SSH-Zugang gebraucht.': 'In the second case the credentials stay there and only an SSH account is needed here.',
   'Auf diesem Rechner': 'On this computer',
   'Auf einem anderen Rechner (SSH)': 'On another computer (SSH)',
-  'benutzer@rechner, z.B. benutzer@192.0.2.12': 'user@host, e.g. user@192.0.2.12',
+  'benutzer@rechner, z.B. benutzer@192.0.2.10': 'user@host, e.g. user@192.0.2.10',
   'Pfad zu himalaya dort (Standard: himalaya)': 'Path to himalaya there (default: himalaya)',
   'Der öffentliche SSH-Schlüssel dieses Rechners muss dort hinterlegt sein — sonst kommt keine Verbindung zustande.': "This computer's public SSH key must be stored there — otherwise no connection can be made.",
   'Bilder aus Mails laden': 'Load images in mails',
