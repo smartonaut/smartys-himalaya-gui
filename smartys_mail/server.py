@@ -122,6 +122,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._konto_anlegen(d)
         if pfad == "/api/konto/anzeigename":
             return self._konto_anzeigename(d)
+        if pfad == "/api/konten/ordnung":
+            return self._konten_ordnung(d)
         self._sende(404, "text/plain; charset=utf-8", "nicht gefunden")
 
     def _konto_anzeigename(self, d):
@@ -133,6 +135,19 @@ class Handler(BaseHTTPRequestHandler):
         if ergebnis.get("error"):
             return self._json({"error": ergebnis["error"]})
         return self._json(ergebnis)
+
+    def _konten_ordnung(self, d):
+        """Reihenfolge der Kontogruppen speichern."""
+        reihe = d.get("ordnung")
+        if not isinstance(reihe, list):
+            return self._json({"error": "ordnung fehlt"})
+        if DEMO:
+            return self._json({"ok": True, "ordnung": demo.ordnung_setzen(reihe)})
+        try:
+            gespeichert = konten.ordnung_speichern(reihe)
+        except Exception as e:  # noqa: BLE001
+            return self._json({"error": f"Reihenfolge nicht speicherbar: {e}"})
+        return self._json({"ok": True, "ordnung": gespeichert})
 
     def _flag(self, d):
         konto = (d.get("account") or "").strip()
@@ -329,6 +344,13 @@ class Handler(BaseHTTPRequestHandler):
                     eintrag["email"] = z.get("email", "")
                     eintrag["display_name"] = z.get("display_name", "")
                     eintrag["gruppe"] = z.get("gruppe", konten.GRUPPE_REST)
+                # Reihenfolge der Gruppen: gespeicherte zuerst, neue hinten dran
+                vorhanden = []
+                for eintrag in daten["accounts"]:
+                    g = eintrag.get("gruppe") if isinstance(eintrag, dict) else None
+                    if g and g not in vorhanden:
+                        vorhanden.append(g)
+                daten["ordnung"] = konten.gruppen_sortiert(vorhanden)
             return self._json(daten)
 
         if pfad == "/api/signaturen":

@@ -586,3 +586,18 @@ details summary:hover { color: var(--gold); }
 .uebersetzung.fehler{border-left-color:#e05a5a;background:rgba(224,90,90,.08);color:#ffb3b3}
 .ueberschliessen{background:none;border:0;color:#8fa1b5;cursor:pointer;font-size:11px;
   text-decoration:underline;padding:0 0 0 10px;text-transform:none;letter-spacing:0}
+
+/* Gruppen verschieben: Pfeile im Kopf (erscheinen beim Ueberfahren) und
+   Ziehen der Ueberschrift. */
+.kontogruppe-titel { display: flex; align-items: center; gap: 6px; cursor: grab; }
+.kontogruppe-titel .gruppenname { flex: 1 1 auto; min-width: 0; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; }
+.gruppen-pfeile { display: flex; gap: 1px; flex: 0 0 auto; opacity: 0;
+  transition: opacity var(--wechsel); }
+.kontogruppe:hover .gruppen-pfeile, .kontogruppe-titel:focus-within .gruppen-pfeile { opacity: 1; }
+.gruppen-pfeile button { border: 0; padding: 1px 4px; border-radius: var(--radius-klein);
+  background: transparent; cursor: pointer; color: var(--text-leise);
+  font-size: 9px; line-height: 1; }
+.gruppen-pfeile button:hover { background: var(--bg-hover); color: var(--gold); }
+.kontogruppe.wird-gezogen { opacity: .45; }
+.kontogruppe.zielecke { box-shadow: inset 0 2px 0 var(--gold); }

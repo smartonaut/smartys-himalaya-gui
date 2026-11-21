@@ -111,8 +111,18 @@ INHALT = {
 }
 
 
+# Im Demo-Betrieb gemerkte Gruppenreihenfolge (kein Schreiben auf die Platte).
+_ORDNUNG = []
+
+
 def konten():
-    return {"accounts": KONTEN}
+    return {"accounts": KONTEN, "ordnung": list(_ORDNUNG)}
+
+
+def ordnung_setzen(reihe):
+    global _ORDNUNG
+    _ORDNUNG = [str(g) for g in (reihe or []) if str(g).strip()]
+    return _ORDNUNG
 
 
 def mailboxes(_konto):

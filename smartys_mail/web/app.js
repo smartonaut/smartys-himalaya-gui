@@ -113,12 +113,41 @@ async function ladeKonten(){
     if(!nachGruppe[g]){nachGruppe[g]=[];reihenfolge.push(g)}
     nachGruppe[g].push(a);
   });
-  reihenfolge.forEach(g=>{
+  // Gespeicherte Reihenfolge gilt; Gruppen, die dort noch nicht stehen,
+  // haengen hinten an, statt zu verschwinden.
+  const gespeichert=Array.isArray(d.ordnung)?d.ordnung:[];
+  const sortiert=gespeichert.filter(g=>nachGruppe[g]);
+  reihenfolge.forEach(g=>{if(sortiert.indexOf(g)<0)sortiert.push(g)});
+
+  sortiert.forEach(g=>{
     const block=document.createElement('div');
     block.className='kontogruppe';
     if(g){
       const titel=document.createElement('div');
-      titel.className='kontogruppe-titel';titel.textContent=g;
+      titel.className='kontogruppe-titel';
+      const pfeile=document.createElement('span');
+      pfeile.className='gruppen-pfeile';
+      [['▲',-1],['▼',1]].forEach(([zeichen,richtung])=>{
+        const b=document.createElement('button');
+        b.type='button';b.textContent=zeichen;
+        b.title=richtung<0?t('Gruppe nach oben'):t('Gruppe nach unten');
+        b.onclick=ev=>{ev.stopPropagation();gruppeVerschieben(g,richtung)};
+        pfeile.appendChild(b);
+      });
+      const name=document.createElement('span');
+      name.className='gruppenname';name.textContent=g;
+      titel.appendChild(name);titel.appendChild(pfeile);
+      titel.draggable=true;
+      titel.addEventListener('dragstart',ev=>{
+        gezogeneGruppe=g;
+        ev.dataTransfer.setData('text/plain',g);
+        ev.dataTransfer.effectAllowed='move';
+        block.classList.add('wird-gezogen');
+      });
+      titel.addEventListener('dragend',()=>{
+        gezogeneGruppe=null;
+        document.querySelectorAll('.kontogruppe').forEach(x=>x.classList.remove('wird-gezogen','zielecke'));
+      });
       block.appendChild(titel);
     }
     // Standardkonto nach oben, sonst nach Anzeigename — der Server liefert
@@ -132,6 +161,65 @@ async function ladeKonten(){
     el.appendChild(block);
   });
 }
+
+/* Gruppenreihenfolge aendern — per Pfeil oder durch Ziehen der Ueberschrift.
+   Gespeichert wird die Reihenfolge der Ueberschriften, wie sie gerade dastehen. */
+let gezogeneGruppe=null;
+
+function gruppenNamen(){
+  return [...document.querySelectorAll('.kontogruppe-titel .gruppenname')].map(e=>e.textContent);
+}
+
+async function ordnungSpeichern(reihe){
+  try{
+    const r=await (await fetch('/api/konten/ordnung',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ordnung:reihe})})).json();
+    if(r.error){zeigeHinweis(r.error);return false}
+  }catch(e){zeigeHinweis(String(e));return false}
+  return true;
+}
+
+async function nachUmsortieren(){
+  await ladeKonten();
+  // Auswahl nicht verlieren: Konto wieder oeffnen, wenn es eines gab.
+  if(konto){
+    const el=document.querySelector('.konto[data-name="'+konto.replace(/"/g,'')+'"]');
+    if(el)waehleKonto(konto,el);
+  }
+}
+
+async function gruppeVerschieben(gruppe,richtung){
+  const reihe=gruppenNamen();
+  const i=reihe.indexOf(gruppe),j=i+richtung;
+  if(i<0||j<0||j>=reihe.length)return;
+  const merk=reihe[i];reihe[i]=reihe[j];reihe[j]=merk;
+  if(!await ordnungSpeichern(reihe))return;
+  await nachUmsortieren();
+}
+
+/* Ablegen auf einer anderen Gruppe: die gezogene Ueberschrift landet dort. */
+document.addEventListener('dragover',ev=>{
+  const block=ev.target.closest&&ev.target.closest('.kontogruppe');
+  if(!block||!gezogeneGruppe)return;
+  ev.preventDefault();
+  document.querySelectorAll('.kontogruppe').forEach(b=>b.classList.remove('zielecke'));
+  if((block.querySelector('.gruppenname')||{}).textContent!==gezogeneGruppe)block.classList.add('zielecke');
+});
+
+document.addEventListener('drop',async ev=>{
+  const block=ev.target.closest&&ev.target.closest('.kontogruppe');
+  if(!block||!gezogeneGruppe)return;
+  ev.preventDefault();
+  const ziel=(block.querySelector('.gruppenname')||{}).textContent;
+  const reihe=gruppenNamen().filter(g=>g!==gezogeneGruppe);
+  const pos=reihe.indexOf(ziel);
+  reihe.splice(pos<0?reihe.length:pos,0,gezogeneGruppe);
+  gezogeneGruppe=null;
+  document.querySelectorAll('.kontogruppe').forEach(b=>b.classList.remove('zielecke','wird-gezogen'));
+  await ordnungSpeichern(reihe);
+  await nachUmsortieren();
+});
 
 /* Eine Zeile der Kontenliste: Anzeigename oben, Adresse klein darunter.
    Die Adresse ist wichtiger als der Name — jeder kann sich "Bank" nennen. */

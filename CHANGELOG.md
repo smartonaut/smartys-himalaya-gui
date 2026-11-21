@@ -4,6 +4,19 @@ Alle nennenswerten Änderungen an der Smartys Himalaya GUI. Format orientiert
 an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/) und
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.6.0] — 2026-11-21
+
+Schwerpunkt: die Reihenfolge der Gruppen bestimmt der Nutzer.
+
+### Neu
+
+- **Gruppen verschieben** — mit den Pfeilen rechts an der Ueberschrift oder
+  durch Ziehen der Ueberschrift auf eine andere Gruppe. Die Reihenfolge wird
+  in `konten.json` im Einstellordner abgelegt und gilt beim naechsten Start
+  weiter.
+- Eine Gruppe, die in der gespeicherten Reihenfolge noch nicht vorkommt (etwa
+  nach einer neuen Domain), haengt hinten an, statt zu verschwinden.
+
 ## [0.5.0] — 2026-11-21
 
 Schwerpunkt: die Kontenleiste. Mit 32 Postfaechern war eine alphabetische Liste

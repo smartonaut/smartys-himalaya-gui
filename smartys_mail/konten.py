@@ -292,3 +292,49 @@ def anzeigename_setzen(konto, anzeigename):
     except Exception as e:  # noqa: BLE001
         return {"error": f"Schreiben fehlgeschlagen: {e}"}
     return {"ok": True, "name": name, "display_name": wert}
+
+
+# --------------------------------------------------- Reihenfolge der Gruppen
+def _ordnungsdatei():
+    return os.path.join(pfade.einstellordner(), "konten.json")
+
+
+def ordnung_laden():
+    """Gespeicherte Gruppenreihenfolge. Leere/kaputte Datei = Vorgabe."""
+    try:
+        import json
+        with open(_ordnungsdatei(), encoding="utf-8") as f:
+            daten = json.load(f)
+        reihe = daten.get("gruppen") if isinstance(daten, dict) else daten
+        if isinstance(reihe, list):
+            return [str(g) for g in reihe if str(g).strip()]
+    except Exception:  # noqa: BLE001
+        pass
+    return []
+
+
+def ordnung_speichern(reihe):
+    """Reihenfolge ablegen. Die Vorgabe bleibt als Rueckfall erhalten."""
+    import json
+    reihe = [str(g) for g in (reihe or []) if str(g).strip()]
+    ziel = _ordnungsdatei()
+    os.makedirs(os.path.dirname(ziel), exist_ok=True)
+    with open(ziel, "w", encoding="utf-8") as f:
+        json.dump({"gruppen": reihe}, f, ensure_ascii=False, indent=1)
+    return reihe
+
+
+def gruppen_sortiert(vorhandene, reihe=None):
+    """Gruppennamen in der gewuenschten Reihenfolge.
+
+    Gespeicherte Reihenfolge zuerst, danach die noch nicht einsortierten in der
+    Vorgabereihenfolge. So taucht eine neue Gruppe (etwa eine weitere Domain)
+    von selbst auf, statt zu verschwinden, weil sie niemand einsortiert hat.
+    """
+    reihe = ordnung_laden() if reihe is None else list(reihe)
+    vorhanden = list(vorhandene)
+    ergebnis = [g for g in reihe if g in vorhanden]
+    vorgabe = gruppen_reihenfolge()
+    uebrig = [g for g in vorhanden if g not in ergebnis]
+    uebrig.sort(key=lambda g: (vorgabe.index(g) if g in vorgabe else 99, g))
+    return ergebnis + uebrig
