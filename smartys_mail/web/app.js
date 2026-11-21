@@ -1,6 +1,16 @@
 let konto=null, ordner='INBOX', mail=null, signaturCache=null;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 async function hole(u){const r=await fetch(u);return r.json()}
+
+/* Kurze Rueckmeldung unten einblenden — fuer Faelle, in denen kein eigenes
+   Statusfeld in der Naehe ist (z. B. Umbenennen in der Kontenleiste). */
+function zeigeHinweis(text){
+  let box=document.querySelector('.hinweis-toast');
+  if(!box){box=document.createElement('div');box.className='hinweis-toast';document.body.appendChild(box)}
+  box.textContent=text;
+  clearTimeout(zeigeHinweis._t);
+  zeigeHinweis._t=setTimeout(()=>{box.remove()},4200);
+}
 async function verbindungEditor(){
   const box=document.getElementById('lesen');
   const v=await hole('/api/verbindung');
@@ -92,15 +102,91 @@ async function ladeKonten(){
   const keineKonfig = d.error && /no configuration|config.*not found/i.test(d.error);
   if(d.error && !keineKonfig){el.textContent=t('Fehler: ')+d.error;return}
   el.innerHTML='';
-  if(keineKonfig || !(d.accounts||[]).length){kontoAssistent();return}
-  (d.accounts||[]).forEach(a=>{
-    const div=document.createElement('div');
-    div.className='konto';div.dataset.name=a.name;
-    div.innerHTML='<span class="kontoname">'+esc(a.name)+'</span>'+
-      (a.default?'<span class="standard" title="'+t('Standardkonto')+'">★</span>':'');
-    div.onclick=()=>waehleKonto(a.name,div);
-    el.appendChild(div);
+  const liste=(d.accounts||[]);
+  if(keineKonfig || !liste.length){kontoAssistent();return}
+
+  // Nach Gruppen buendeln. Die Gruppe kommt vom Server aus der Domain, die
+  // Reihenfolge bestimmt er ebenfalls — hier wird nur gezeichnet.
+  const reihenfolge=[],nachGruppe={};
+  liste.forEach(a=>{
+    const g=a.gruppe||'';
+    if(!nachGruppe[g]){nachGruppe[g]=[];reihenfolge.push(g)}
+    nachGruppe[g].push(a);
   });
+  reihenfolge.forEach(g=>{
+    const block=document.createElement('div');
+    block.className='kontogruppe';
+    if(g){
+      const titel=document.createElement('div');
+      titel.className='kontogruppe-titel';titel.textContent=g;
+      block.appendChild(titel);
+    }
+    // Standardkonto nach oben, sonst nach Anzeigename — der Server liefert
+    // alphabetisch nach Kontoname, und "dekojuwelen-ashley" vor "Dekojuwelen.de"
+    // liest sich unordentlich.
+    nachGruppe[g].sort((x,y)=>{
+      if(!!y.default!==!!x.default)return y.default?1:-1;
+      return String(x.display_name||x.name).localeCompare(String(y.display_name||y.name),'de');
+    });
+    nachGruppe[g].forEach(a=>block.appendChild(kontoZeile(a)));
+    el.appendChild(block);
+  });
+}
+
+/* Eine Zeile der Kontenliste: Anzeigename oben, Adresse klein darunter.
+   Die Adresse ist wichtiger als der Name — jeder kann sich "Bank" nennen. */
+function kontoZeile(a){
+  const div=document.createElement('div');
+  div.className='konto';div.dataset.name=a.name;
+  div.innerHTML='<span class="konto-kopf"><span class="kontoname">'+
+      esc(a.display_name||a.name)+'</span>'+
+      (a.default?'<span class="standard" title="'+t('Standardkonto')+'">★</span>':'')+
+    '</span>'+
+    '<span class="kontoadresse">'+esc(a.email||a.name)+'</span>';
+  const stift=document.createElement('button');
+  stift.type='button';stift.className='umbenennen';
+  stift.title=t('Anzeigename ändern');stift.textContent='✎';
+  stift.onclick=ev=>{ev.stopPropagation();kontoUmbenennen(a,div)};
+  div.appendChild(stift);
+  div.onclick=()=>waehleKonto(a.name,div);
+  return div;
+}
+
+/* Anzeigename an Ort und Stelle aendern. Der Kontoname (der Schluessel in
+   himalaya) bleibt unangetastet, sonst verlieren Signatur-Gruppen und
+   Mailbox-Aliase ihren Bezug. */
+function kontoUmbenennen(a,div){
+  const alt=a.display_name||a.name;
+  const feld=document.createElement('input');
+  feld.className='konto-feld';feld.type='text';feld.value=alt;
+  feld.setAttribute('aria-label',t('Anzeigename'));
+  const nameEl=div.querySelector('.kontoname');
+  nameEl.replaceWith(feld);
+  feld.focus();feld.select();
+  let erledigt=false;
+  const zurueck=(wert)=>{
+    const span=document.createElement('span');
+    span.className='kontoname';span.textContent=wert;
+    feld.replaceWith(span);
+  };
+  const beenden=async(speichern)=>{
+    if(erledigt)return;erledigt=true;
+    const neu=(feld.value||'').trim();
+    if(!speichern||!neu||neu===alt){zurueck(alt);return}
+    let r={};
+    try{
+      r=await (await fetch('/api/konto/anzeigename',{method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({account:a.name,anzeigename:neu})})).json();
+    }catch(e){r={error:String(e)}}
+    if(r.error){zurueck(alt);zeigeHinweis(r.error);return}
+    a.display_name=neu;zurueck(neu);
+  };
+  feld.onkeydown=ev=>{
+    if(ev.key==='Enter'){ev.preventDefault();beenden(true)}
+    else if(ev.key==='Escape'){ev.preventDefault();beenden(false)}
+  };
+  feld.onblur=()=>beenden(true);
 }
 
 /* ---------------------------------------------------------------- Konten */

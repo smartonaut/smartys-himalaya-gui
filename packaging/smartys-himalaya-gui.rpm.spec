@@ -8,7 +8,7 @@
 # Starter setzen den Pfad selbst. Damit laeuft ein und dasselbe Paket ueberall.
 
 Name:           smartys-himalaya-gui
-Version:        %{?_version}%{!?_version:0.4.0}
+Version: 0.5.0
 Release:        1%{?dist}
 Summary:        Grafische Oberflaeche fuer himalaya
 License:        MIT

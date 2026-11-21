@@ -33,6 +33,9 @@ einem Mailserver.**
 
 ## Funktionen
 
+- **Konten gruppiert und benannt** — Überschrift je Gruppe mit Trennlinie,
+  Anzeigename über der Adresse, per Stift umbenennbar; die Gruppe ergibt sich
+  aus der Domain, also ohne Pflegeaufwand
 - **Alle himalaya-Konten** in einer Oberfläche — auch mit gemischten
   Anmeldemethoden (Passwort, App-Passwort, OAuth2)
 - **Ordner** je Konto: Eingang, Gesendet, Entwürfe, Papierkorb …

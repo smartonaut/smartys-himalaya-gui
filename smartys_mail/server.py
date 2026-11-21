@@ -120,7 +120,19 @@ class Handler(BaseHTTPRequestHandler):
             return self._konto_pruefen(d)
         if pfad == "/api/konto/anlegen":
             return self._konto_anlegen(d)
+        if pfad == "/api/konto/anzeigename":
+            return self._konto_anzeigename(d)
         self._sende(404, "text/plain; charset=utf-8", "nicht gefunden")
+
+    def _konto_anzeigename(self, d):
+        """Anzeigename eines Kontos aendern — der Kontoname bleibt."""
+        if DEMO:
+            return self._json({"ok": True, "display_name": d.get("anzeigename") or ""})
+        ergebnis = konten.anzeigename_setzen(d.get("account") or "",
+                                             d.get("anzeigename") or "")
+        if ergebnis.get("error"):
+            return self._json({"error": ergebnis["error"]})
+        return self._json(ergebnis)
 
     def _flag(self, d):
         konto = (d.get("account") or "").strip()
@@ -304,15 +316,28 @@ class Handler(BaseHTTPRequestHandler):
         if pfad == "/api/accounts":
             if DEMO:
                 return self._json(demo.konten())
-            return self._json(himalaya.json_aufruf(["account", "list"]))
+            daten = himalaya.json_aufruf(["account", "list"])
+            # himalaya liefert nur Name, Standard-Kennzeichen und die Backends.
+            # Adresse, Anzeigename und Gruppe kommen aus der Konfiguration,
+            # damit die Kontenleiste beschriftet und gruppiert werden kann.
+            if isinstance(daten, dict) and isinstance(daten.get("accounts"), list):
+                info = konten.konto_info()
+                for eintrag in daten["accounts"]:
+                    if not isinstance(eintrag, dict):
+                        continue
+                    z = info.get(eintrag.get("name") or "") or {}
+                    eintrag["email"] = z.get("email", "")
+                    eintrag["display_name"] = z.get("display_name", "")
+                    eintrag["gruppe"] = z.get("gruppe", konten.GRUPPE_REST)
+            return self._json(daten)
 
         if pfad == "/api/signaturen":
             if DEMO:
                 return self._json(demo.signaturen())
             daten = signaturen.laden()
             gruppen = {}
-            for gruppe, konten in konten_je_gruppe().items():
-                gruppen[gruppe] = {"konten": sorted(konten),
+            for gruppe, mitglieder in konten_je_gruppe().items():
+                gruppen[gruppe] = {"konten": sorted(mitglieder),
                                    "html": (daten.get("gruppen") or {}).get(gruppe, "")}
             return self._json({"gruppen": gruppen,
                                "ausnahmen": daten.get("ausnahmen") or {}})

@@ -4,6 +4,31 @@ Alle nennenswerten Änderungen an der Smartys Himalaya GUI. Format orientiert
 an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/) und
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.5.0] — 2026-11-21
+
+Schwerpunkt: die Kontenleiste. Mit 32 Postfaechern war eine alphabetische Liste
+technischer Kontonamen nicht mehr benutzbar.
+
+### Neu
+
+- **Konten sind gruppiert.** Ueberschrift mit Trennlinie je Gruppe, abgeleitet
+  aus der Adressdomain — neue Konten landen automatisch richtig, nichts zu
+  pflegen: `dekojuwelen.de` → Dekojuwelen, `smartys.tech` und `smarty.tips` →
+  Smartys Tech, `sk-ft.de` und `sk-smarty.de` → Job / SK, alles andere → Privat.
+- **Anzeigename und Adresse stehen in der Leiste.** Oben der Name, darunter
+  klein die Adresse — sie sagt, wer wirklich schreibt.
+- **Konten lassen sich umbenennen.** Stift rechts in der Zeile, Enter speichert,
+  Escape bricht ab. Geaendert wird nur `display-name` in der `config.toml`
+  (mit Sicherung daneben); der Kontoname als Schluessel bleibt unangetastet,
+  damit Signatur-Gruppen und Mailbox-Aliase gueltig bleiben.
+- Innerhalb einer Gruppe steht das Standardkonto oben, danach alphabetisch nach
+  Anzeigename.
+
+### Behoben
+
+- Der Stern fuer das Standardkonto hing zwischen Name und Adresse statt auf der
+  Namenszeile.
+
 ## [0.4.1] — 2026-11-01
 
 Schwerpunkt: Gelesen-Markierung reparieren.

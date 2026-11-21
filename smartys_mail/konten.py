@@ -10,11 +10,22 @@ Serverdaten gefuellt. Alles andere landet in der manuellen Eingabe.
 """
 import os
 import re
+import shutil
 import tomllib
 
 from . import pfade
 
 CONFIG = pfade.himalaya_config()
+
+# Gruppen in der Kontenleiste. Aus der Domain abgeleitet, damit beim Anlegen
+# eines Kontos nichts gepflegt werden muss. Reihenfolge = Anzeigereihenfolge,
+# der Rest landet unter GRUPPE_REST.
+GRUPPEN = (
+    ("Dekojuwelen", ("dekojuwelen.de",)),
+    ("Smartys Tech", ("smartys.tech", "smarty.tips")),
+    ("Job / SK", ("sk-ft.de", "sk-smarty.de")),
+)
+GRUPPE_REST = "Privat"
 
 # host_imap, port_imap, host_smtp, port_smtp, verschluesselung, hinweis
 ANBIETER = {
@@ -178,3 +189,106 @@ def konto_hinzufuegen(email, passwort, anzeigename="", name="",
         return {"error": f"Konfiguration waere ungueltig ({e}) — nichts geaendert."}
 
     return {"ok": True, "name": name}
+
+
+# ---------------------------------------------------------------- Gruppen
+def gruppe_von(email):
+    """Gruppenname zu einer Adresse. Unbekannte Domains landen unter Privat."""
+    dom = (email or "").rsplit("@", 1)[-1].lower() if "@" in (email or "") else ""
+    for gruppe, endungen in GRUPPEN:
+        for e in endungen:
+            if dom == e or dom.endswith("." + e):
+                return gruppe
+    return GRUPPE_REST
+
+
+def gruppen_reihenfolge():
+    return [g for g, _ in GRUPPEN] + [GRUPPE_REST]
+
+
+def konto_info():
+    """Kontoname -> {email, display_name, gruppe}.
+
+    Liest nur Adresse und Anzeigename, keine Zugangsdaten. Grundlage fuer die
+    beschriftete Kontenleiste: himalaya selbst liefert in `account list --json`
+    weder Adresse noch Anzeigename.
+    """
+    try:
+        with open(CONFIG, "rb") as f:
+            daten = tomllib.load(f)
+    except Exception:  # noqa: BLE001
+        return {}
+    info = {}
+    for name, eintrag in (daten.get("accounts") or {}).items():
+        if not isinstance(eintrag, dict):
+            continue
+        email = eintrag.get("email") or ""
+        info[name] = {
+            "email": email,
+            "display_name": eintrag.get("display-name") or "",
+            "gruppe": gruppe_von(email),
+        }
+    return info
+
+
+def anzeigename_setzen(konto, anzeigename):
+    """Aendert NUR display-name des Kontos, nicht den Kontonamen.
+
+    Der Kontoname ist der Schluessel in himalaya — Signatur-Gruppen,
+    Mailbox-Aliase und die Verknuepfung in signaturen.json haengen daran. Ein
+    Umbenennen des Schluessels wuerde sie alle verlieren.
+    """
+    name = (konto or "").strip()
+    wert = (anzeigename or "").strip()
+    if not name:
+        return {"error": "Konto fehlt"}
+    if "\n" in wert or "\r" in wert:
+        return {"error": "Der Anzeigename darf keinen Zeilenumbruch enthalten."}
+    if len(wert) > 80:
+        return {"error": "Der Anzeigename ist zu lang (maximal 80 Zeichen)."}
+
+    try:
+        with open(CONFIG, encoding="utf-8") as f:
+            text = f.read()
+    except Exception as e:  # noqa: BLE001
+        return {"error": f"Konfiguration nicht lesbar: {e}"}
+
+    kopf = re.search(r"^\[accounts\." + re.escape(name) + r"\]\s*$", text, re.M)
+    if not kopf:
+        return {"error": f"Konto {name} steht nicht in der Konfiguration."}
+    rest = text[kopf.end():]
+    naechste = re.search(r"^\[", rest, re.M)
+    ende = kopf.end() + (naechste.start() if naechste else len(rest))
+    block = text[kopf.end():ende]
+
+    zeile = "display-name = " + _toml_string(wert)
+    if re.search(r"^display-name\s*=.*$", block, re.M):
+        block_neu = re.sub(r"^display-name\s*=.*$", lambda _m: zeile, block,
+                           count=1, flags=re.M)
+    elif block.startswith("\n"):
+        block_neu = "\n" + zeile + block
+    else:
+        block_neu = "\n" + zeile + "\n" + block
+
+    neu = text[:kopf.end()] + block_neu + text[ende:]
+
+    # Probe, bevor geschrieben wird: die Datei muss gueltiges TOML bleiben und
+    # den neuen Wert wirklich enthalten.
+    try:
+        probe = tomllib.loads(neu)
+        if (probe.get("accounts", {}).get(name, {}).get("display-name") or "") != wert:
+            return {"error": "Der Anzeigename liess sich nicht setzen — nichts geaendert."}
+    except Exception as e:  # noqa: BLE001
+        return {"error": f"Konfiguration waere ungueltig ({e}) — nichts geaendert."}
+
+    try:
+        shutil.copy2(CONFIG, CONFIG + ".bak")
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        with open(CONFIG, "w", encoding="utf-8") as f:
+            f.write(neu)
+        os.chmod(CONFIG, 0o600)
+    except Exception as e:  # noqa: BLE001
+        return {"error": f"Schreiben fehlgeschlagen: {e}"}
+    return {"ok": True, "name": name, "display_name": wert}

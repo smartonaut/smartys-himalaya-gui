@@ -13,7 +13,9 @@ dist/
 .DS_Store
 screenshots/privat/
 packaging/*.deb
+packaging/*.rpm
 *.deb
+*.rpm
 
 # Sicherungskopien beim Bearbeiten
 *.bak

@@ -7,10 +7,25 @@ zu berühren — und es landen garantiert keine fremden Daten in Screenshots.
 """
 import html
 
+# Beispieldaten fuer Screenshots: erfundene Adressen, gruppiert wie in der
+# echten Installation — so ist die gruppierte Kontenleiste sichtbar, ohne dass
+# echte Postfaecher im Bild landen.
 KONTEN = [
-    {"name": "beispiel-firma", "default": True, "backends": ["imap", "smtp"]},
-    {"name": "beispiel-privat", "default": False, "backends": ["imap", "smtp"]},
-    {"name": "beispiel-verein", "default": False, "backends": ["imap", "smtp"]},
+    {"name": "beispiel-firma", "default": True, "backends": ["imap", "smtp"],
+     "email": "info@beispiel-firma.de", "display_name": "Beispiel Firma",
+     "gruppe": "Beispiel Firma"},
+    {"name": "beispiel-shop", "default": False, "backends": ["imap", "smtp"],
+     "email": "shop@beispiel-firma.de", "display_name": "Beispiel Shop",
+     "gruppe": "Beispiel Firma"},
+    {"name": "beispiel-verein", "default": False, "backends": ["imap", "smtp"],
+     "email": "vorstand@beispiel-verein.de", "display_name": "Beispiel Verein",
+     "gruppe": "Beispiel Verein"},
+    {"name": "beispiel-privat", "default": False, "backends": ["imap", "smtp"],
+     "email": "beispiel@beispiel-privat.de", "display_name": "Beispiel Privat",
+     "gruppe": "Beispiel Privat"},
+    {"name": "beispiel-neben", "default": False, "backends": ["imap", "smtp"],
+     "email": "neben@beispiel-privat.de", "display_name": "Beispiel Neben",
+     "gruppe": "Beispiel Privat"},
 ]
 
 ORDNER = ["Inbox", "Sent Items", "Drafts", "Archive", "Junk Mail", "Deleted Items"]
