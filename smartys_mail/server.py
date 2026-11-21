@@ -455,13 +455,23 @@ class Handler(BaseHTTPRequestHandler):
         anhaenge = []
         antwort = himalaya.json_aufruf(
             ["attachment", "list", "-a", konto, "-m", box, mid], timeout=60)
+        # himalaya nennt als "id" die MIME-Teilposition (1-basiert, luecken­haft:
+        # 1, 5, 9 …) — NICHT die Position in dieser Liste. Zum Herunterladen
+        # gehoert genau diese id, sonst holt man den falschen Teil.
         for x in (antwort.get("attachments") or []):
-            anhaenge.append({"name": x.get("filename") or x.get("name") or ""})
+            anhaenge.append({"id": str(x.get("id") or ""),
+                             "name": x.get("filename") or x.get("name") or "",
+                             "mime": x.get("mime") or "",
+                             "size": x.get("size") or 0,
+                             "inline": bool(x.get("inline"))})
 
         return self._json({"subject": kopf_entpacken(felder.get("subject", "")),
                            "from": kopf_entpacken(felder.get("from", "")),
                            "date": felder.get("date", ""),
                            "anhaenge": anhaenge,
+                           "virenscanner": bool(
+                               __import__("shutil").which("clamdscan")
+                               or __import__("shutil").which("clamscan")),
                            # Immer die VOLLE Rohmail uebergeben: rumpf ist
                            # der Text nach dem ersten Leerzeilen-Trenner und
                            # damit kein gueltiges MIME mehr — mail_text()
@@ -477,30 +487,88 @@ class Handler(BaseHTTPRequestHandler):
                            "bilder_laden": bool(
                                verbindung.laden().get("bilder_laden"))})
 
+    def _virenscan(self, datei):
+        """Anhang vor der Auslieferung pruefen.
+
+        clamdscan (Daemon) ist schnell und wird bevorzugt; ohne Daemon
+        clamscan direkt. Fehlt beides, wird NICHT stillschweigend
+        ausgeliefert — der Aufrufer bekommt "nicht-geprueft" und meldet das.
+        Rueckgabe: ("sauber"|"infiziert"|"nicht-geprueft", Meldung)
+        """
+        import shutil as _shutil
+        import subprocess as _sp
+        daemon = _shutil.which("clamdscan")
+        einzeln = _shutil.which("clamscan")
+        if not (daemon or einzeln):
+            return "nicht-geprueft", "Kein Virenscanner installiert (clamav fehlt)."
+        befehl = [daemon or einzeln, "--no-summary", "--stdout"]
+        if not daemon and einzeln:
+            befehl.append("--database=/var/lib/clamav")
+        befehl.append(datei)
+        try:
+            e = _sp.run(befehl, capture_output=True, text=True, timeout=120)
+        except Exception as ex:  # noqa: BLE001
+            return "nicht-geprueft", f"Pruefung nicht moeglich: {ex}"
+        # clamscan: 0 = sauber, 1 = Fund, 2 = Fehler
+        if e.returncode == 0:
+            return "sauber", ""
+        if e.returncode == 1:
+            meldung = (e.stdout or "").strip().splitlines()
+            treffer = [z for z in meldung if "FOUND" in z]
+            return "infiziert", (treffer[0] if treffer else "Fund gemeldet")
+        return "nicht-geprueft", (e.stderr or e.stdout or "Scanner-Fehler").strip()[:200]
+
     def _anhang(self, w):
         konto, mid = w("account"), w("id")
-        box, index = w("mailbox", "Inbox"), w("index", "0")
+        box = w("mailbox", "Inbox")
+        teil = w("teil") or w("index") or ""
+        vorschau = (w("vorschau") or "") in ("1", "true", "ja")
         if not (konto and mid):
             return self._json({"error": "account/id fehlt"})
         os.makedirs(DOWNLOAD_TMP, exist_ok=True)
         vorher = set(os.listdir(DOWNLOAD_TMP))
-        _, _, fehler = himalaya.roh_aufruf(
-            ["attachment", "download", "-a", konto, "-m", box, "-d", DOWNLOAD_TMP, mid, index])
+        befehl = ["attachment", "download", "-a", konto, "-m", box,
+                  "-d", DOWNLOAD_TMP, mid]
+        if teil != "":
+            befehl.append(str(teil))
+        _, _, fehler = himalaya.roh_aufruf(befehl)
         neu = set(os.listdir(DOWNLOAD_TMP)) - vorher
         if not neu:
             return self._json({"error": (fehler or "Anhang nicht gefunden").strip()[:200]})
         datei = os.path.join(DOWNLOAD_TMP, sorted(neu)[0])
+        # Erst pruefen, dann lesen und loeschen — nach dem Loeschen findet der
+        # Scanner nichts mehr und meldet faelschlich "nicht geprueft".
+        zustand, meldung = self._virenscan(datei)
         try:
             rohdaten = open(datei, "rb").read()
             os.remove(datei)
         except Exception as e:  # noqa: BLE001
             return self._json({"error": str(e)})
         name = os.path.basename(datei)
+        if zustand == "infiziert":
+            try:
+                os.remove(datei)
+            except Exception:  # noqa: BLE001
+                pass
+            return self._sende(403, "application/json; charset=utf-8",
+                               '{"error": "Der Anhang wurde als schaedlich erkannt und '
+                               'nicht ausgeliefert: ' + meldung.replace('"', "'")[:120] + '"}')
+        typ = mimetypes.guess_type(name)[0] or "application/octet-stream"
+        # Vorschau im Fenster (PDF, Bilder) braucht "inline"; zum Speichern
+        # bleibt "attachment", damit der Browser die Datei ablegt.
+        art = "inline" if vorschau else "attachment"
         self.send_response(200)
-        self.send_header("Content-Type",
-                         mimetypes.guess_type(name)[0] or "application/octet-stream")
+        self.send_header("Content-Type", typ)
         self.send_header("Content-Length", str(len(rohdaten)))
-        self.send_header("Content-Disposition", f"attachment; filename*=UTF-8''{quote(name)}")
+        self.send_header("Content-Disposition",
+                         f"{art}; filename*=UTF-8''{quote(name)}")
+        self.send_header("Cache-Control", "no-store")
+        # Damit die Oberflaeche den Pruefstand anzeigen kann ("geprueft" vs.
+        # "kein Scanner installiert") — stillschweigend ausliefern waere hier
+        # die falsche Entscheidung.
+        self.send_header("X-Virenscan", zustand)
+        if meldung:
+            self.send_header("X-Virenscan-Meldung", meldung[:180].replace("\n", " "))
         self.end_headers()
         return self.wfile.write(rohdaten)
 

@@ -506,13 +506,7 @@ async function lese(id,el,env){
   const envVon=(env&&env.from&&env.from[0])?(env.from[0].name?env.from[0].name+(env.from[0].email?' <'+env.from[0].email+'>':''):(env.from[0].email||'')):'';
   const betreff=d.subject||envBetreff||'';
   const von=d.from||envVon||'';
-  let anhangHtml='';
-  if((d.anhaenge||[]).length){
-    anhangHtml='<div class="anhaenge"><b>'+t('Anhänge')+'</b><br>'+
-      d.anhaenge.map((a,i)=>'<a href="/api/attachment?account='+encodeURIComponent(konto)+
-        '&id='+encodeURIComponent(id)+'&index='+i+'&mailbox='+encodeURIComponent(ordner)+'">'+
-        esc(a.name||(t('Anhang ')+(i+1)))+'</a>').join('')+'</div>';
-  }
+  const anhangHtml=anhangListe(konto,id,ordner,d.anhaenge||[],!!d.virenscanner);
   box.innerHTML='<h2>'+esc(betreff||t('(ohne Betreff)'))+'</h2>'+
     '<div class="meta">'+absenderKopf(von)+'  ·  '+esc(zeitLang(d.date))+'</div>'+
     anhangHtml+
@@ -845,4 +839,103 @@ async function uebersetzen(){
 function uebersetzungSchliessen(){
   const b=document.getElementById('uebersetzung');
   if(b)b.innerHTML='';
+}
+
+/* ------------------------------------------------------------- Anhänge */
+function dateiGroesse(b){
+  b=Number(b)||0;
+  if(!b)return '';
+  if(b<1024)return b+' B';
+  if(b<1024*1024)return (b/1024).toFixed(0)+' KB';
+  return (b/1048576).toFixed(1).replace('.',',')+' MB';
+}
+
+/* Vorschau im Fenster geht fuer PDF, Bilder und Text. Alles andere wird
+   heruntergeladen — ein Word-Dokument kann der Browser nicht darstellen. */
+function anhangArt(a){
+  const mime=(a.mime||'').toLowerCase();
+  const name=(a.name||'').toLowerCase();
+  if(mime==='application/pdf'||name.endsWith('.pdf'))return 'pdf';
+  if(mime.startsWith('image/')||/\.(png|jpe?g|gif|webp|bmp|svg)$/.test(name))return 'bild';
+  if(mime.startsWith('text/')||/\.(txt|csv|log|md)$/.test(name))return 'text';
+  return 'sonst';
+}
+
+function anhangSymbol(art){
+  return art==='pdf'?'\ud83d\udcc4':art==='bild'?'\ud83d\uddbc\ufe0f':
+         art==='text'?'\ud83d\udcc3':'\ud83d\udcc1';
+}
+
+function anhangUrl(konto,id,ordner,teil,namen){
+  return '/api/attachment?account='+encodeURIComponent(konto)+
+    '&id='+encodeURIComponent(id)+'&mailbox='+encodeURIComponent(ordner)+
+    (teil!==undefined&&teil!==null&&teil!==''?'&teil='+encodeURIComponent(teil):'')+
+    (namen?'&vorschau=1':'');
+}
+
+function anhangListe(konto,id,ordner,liste,scanner){
+  if(!liste.length)return '';
+  const zeilen=liste.map(a=>{
+    const art=anhangArt(a);
+    const name=a.name||(t('Anhang'));
+    const vorschau=(art!=='sonst');
+    return '<div class="anhang">'+
+      '<span class="anhang-symbol" aria-hidden="true">'+anhangSymbol(art)+'</span>'+
+      '<span class="anhang-text"><span class="anhang-name">'+esc(name)+'</span>'+
+        '<span class="anhang-groesse">'+esc(dateiGroesse(a.size))+'</span></span>'+
+      (vorschau
+        ? '<button type="button" class="anhang-knopf" '+
+          'onclick="anhangVorschau(\''+esc(konto)+'\',\''+esc(id)+'\',\''+esc(ordner)+
+          '\',\''+esc(a.id)+'\',\''+esc(name).replace(/'/g,'')+'\')">Vorschau</button>'
+        : '')+
+      '<a class="anhang-knopf" href="'+anhangUrl(konto,id,ordner,a.id,false)+'">Herunterladen</a>'+
+    '</div>';
+  }).join('');
+  return '<div class="anhaenge"><b>'+t('Anhänge')+' ('+liste.length+')</b>'+zeilen+
+    (scanner?'':'<div class="anhang-warnung">Kein Virenscanner installiert — '+
+      'Anhänge werden beim Öffnen nicht geprüft.</div>')+'</div>';
+}
+
+/* Eigenes Vorschaufenster: laedt den Anhang einmal, zeigt den Pruefstand aus
+   dem Kopf der Antwort und stellt die Daten als Blob dar. So laeuft jede
+   Vorschau durch dieselbe Virenpruefung wie der Download — und ein Fund wird
+   als Meldung gezeigt statt als leeres Fenster. */
+async function anhangVorschau(konto,id,ordner,teil,name){
+  const url=anhangUrl(konto,id,ordner,teil,true);
+  let antwort;
+  try{
+    antwort=await fetch(url);
+  }catch(e){zeigeHinweis('Anhang nicht abrufbar: '+e);return}
+  if(!antwort.ok){
+    let meldung='Anhang nicht abrufbar ('+antwort.status+')';
+    try{const j=await antwort.json();if(j&&j.error)meldung=j.error}catch(e){}
+    zeigeHinweis(meldung);return
+  }
+  const stand=(antwort.headers.get('X-Virenscan')||'').toLowerCase();
+  const blob=await antwort.blob();
+  const quelle=URL.createObjectURL(blob);
+  const art=anhangArt({name:name});
+  const rahmen=art==='pdf'
+    ? '<iframe class="vorschau-rahmen" src="'+quelle+'" title="'+esc(name)+'"></iframe>'
+    : '<img class="vorschau-bild" src="'+quelle+'" alt="'+esc(name)+'">';
+  const hinweis=stand==='sauber'?'<span class="vorschau-scan gut">virengeprüft</span>'
+    :stand==='infiziert'?'<span class="vorschau-scan schlecht">Fund gemeldet</span>'
+    :'<span class="vorschau-scan offen">nicht geprüft</span>';
+  const box=document.createElement('div');
+  box.className='vorschau-overlay';
+  box.innerHTML='<div class="vorschau-fenster" role="dialog" aria-label="'+esc(name)+'">'+
+      '<div class="vorschau-kopf"><span class="vorschau-name">'+esc(name)+'</span>'+hinweis+
+        '<a class="vorschau-knopf" href="'+url+'" target="_blank" rel="noopener">Im Browser öffnen</a>'+
+        '<a class="vorschau-knopf" href="'+anhangUrl(konto,id,ordner,teil,false)+'">Herunterladen</a>'+
+        '<button type="button" class="vorschau-schliessen" title="Schließen (Esc)">\u2715</button>'+
+      '</div>'+rahmen+
+    '</div>';
+  const schliessen=()=>{
+    box.remove();URL.revokeObjectURL(quelle);document.removeEventListener('keydown',taste);
+  };
+  const taste=ev=>{if(ev.key==='Escape')schliessen()};
+  box.addEventListener('click',ev=>{if(ev.target===box)schliessen()});
+  box.querySelector('.vorschau-schliessen').onclick=schliessen;
+  document.addEventListener('keydown',taste);
+  document.body.appendChild(box);
 }

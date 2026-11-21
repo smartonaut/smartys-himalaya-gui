@@ -4,6 +4,31 @@ Alle nennenswerten Änderungen an der Smartys Himalaya GUI. Format orientiert
 an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/) und
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.8.0] — 2026-11-21
+
+Schwerpunkt: Anhaenge. Sie waren nicht anklickbar, weil der Download den
+falschen Teil holte.
+
+### Behoben
+
+- **Anhaenge luden den falschen Teil.** `attachment download` erwartet die
+  MIME-Teilposition, die `attachment list` als `id` meldet (1-basiert und mit
+  Luecken, etwa 1, 5, 9) — uebergeben wurde die Position in der Liste (0, 1, 2).
+  Jetzt wird die `id` durchgereicht.
+- Anhaenge stehen als Zeilen mit Symbol, Name, Groesse und Knoepfen; vorher
+  liefen die Links ohne Trennung aneinander.
+
+### Neu
+
+- **Vorschaufenster** fuer PDF, Bilder und Text: eigener Rahmen ueber der
+  Oberflaeche, mit „Im Browser oeffnen" und „Herunterladen". Word und anderes,
+  was der Browser nicht darstellen kann, wird weiterhin nur geladen.
+- **Virenpruefung vor der Auslieferung.** Jeder Anhang laeuft durch clamav
+  (clamdscan, sonst clamscan); bei einem Fund antwortet der Endpunkt mit 403
+  statt der Datei und die Oberflaeche zeigt den Grund. Der Pruefstand steht
+  im Kopf der Antwort (`X-Virenscan`) und im Vorschaufenster. Fehlt der
+  Scanner, sagt die Oberflaeche das statt still auszuliefern.
+
 ## [0.7.1] — 2026-11-21
 
 ### Behoben

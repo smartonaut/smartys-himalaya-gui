@@ -288,15 +288,7 @@ input.such:focus { background: var(--bg-karte); }
   text-transform: uppercase;
   letter-spacing: .5px;
 }
-.anhaenge a {
-  color: var(--gold);
-  text-decoration: none;
-  margin-right: 14px;
-  padding: 2px 0;
-  border-bottom: 1px dotted transparent;
-  transition: border-color var(--wechsel);
-}
-.anhaenge a:hover { border-bottom-color: var(--gold); }
+
 
 /* ------------------------------------------------------------- Verfassen */
 .verfassen {
@@ -601,3 +593,52 @@ details summary:hover { color: var(--gold); }
 .gruppen-pfeile button:hover { background: var(--bg-hover); color: var(--gold); }
 .kontogruppe.wird-gezogen { opacity: .45; }
 .kontogruppe.zielecke { box-shadow: inset 0 2px 0 var(--gold); }
+
+/* Je Anhang eine Zeile: Symbol, Name mit Groesse, Knoepfe. Die frueheren
+   Inline-Links liefen ohne Trennung aneinander und waren mit der Maus kaum
+   zu treffen. */
+.anhang { display: flex; align-items: center; gap: 9px; padding: 5px 0;
+  border-top: 1px solid var(--rand); }
+.anhang:first-of-type { border-top: 0; }
+.anhang-symbol { flex: 0 0 auto; font-size: 15px; line-height: 1; }
+.anhang-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.anhang-name { color: var(--text); overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; }
+.anhang-groesse { color: var(--text-sehr-leise); font-size: 11px; }
+.anhang-knopf { flex: 0 0 auto; font: inherit; font-size: 12px; padding: 3px 9px;
+  border: 1px solid var(--rand-hell); border-radius: var(--radius-klein);
+  background: transparent; color: var(--text-leise); text-decoration: none;
+  cursor: pointer; transition: color var(--wechsel), border-color var(--wechsel); }
+.anhang-knopf:hover { color: var(--gold); border-color: var(--gold); }
+
+/* Vorschaufenster: Overlay ueber der ganzen Oberflaeche, PDF im Rahmen. */
+.vorschau-overlay { position: fixed; inset: 0; z-index: 80; display: flex;
+  align-items: center; justify-content: center; padding: 24px;
+  background: rgba(3, 6, 12, .78); }
+.vorschau-fenster { display: flex; flex-direction: column; width: min(1000px, 96vw);
+  height: min(88vh, 900px); background: var(--bg-karte); border: 1px solid var(--rand-hell);
+  border-radius: var(--radius); overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+.vorschau-kopf { display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  background: var(--bg-spalte); border-bottom: 1px solid var(--rand); }
+.vorschau-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; color: var(--text); font-weight: 600; font-size: 13px; }
+.vorschau-knopf { flex: 0 0 auto; font-size: 12px; padding: 3px 9px; text-decoration: none;
+  border: 1px solid var(--rand-hell); border-radius: var(--radius-klein);
+  color: var(--text-leise); }
+.vorschau-knopf:hover { color: var(--gold); border-color: var(--gold); }
+.vorschau-schliessen { flex: 0 0 auto; border: 0; background: transparent; cursor: pointer;
+  color: var(--text-leise); font-size: 15px; line-height: 1; padding: 2px 6px;
+  border-radius: var(--radius-klein); }
+.vorschau-schliessen:hover { background: var(--bg-hover); color: var(--gold); }
+.vorschau-rahmen { flex: 1 1 auto; width: 100%; border: 0; background: #fff; }
+.vorschau-bild { flex: 1 1 auto; max-width: 100%; max-height: 100%; object-fit: contain;
+  background: #0b0f16; padding: 8px; }
+
+/* Pruefstand im Vorschaufenster und Warnung ohne Scanner */
+.vorschau-scan { flex: 0 0 auto; font-size: 11px; padding: 2px 7px; border-radius: 999px;
+  border: 1px solid var(--rand-hell); color: var(--text-leise); }
+.vorschau-scan.gut { color: var(--gruen); border-color: rgba(63,185,80,.5); }
+.vorschau-scan.schlecht { color: var(--rot); border-color: rgba(248,81,73,.6); }
+.vorschau-scan.offen { color: var(--gold); border-color: rgba(240,180,41,.5); }
+.anhang-warnung { margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--rand);
+  color: var(--gold); font-size: 11.5px; }

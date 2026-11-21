@@ -42,7 +42,7 @@ einem Mailserver.**
 - **Ordner** je Konto: Eingang, Gesendet, Entwürfe, Papierkorb …
 - **Nachrichten lesen** — HTML-Mails werden in lesbaren Text gewandelt,
   quoted-printable dekodiert, kein Tracking
-- **Anhänge** herunterladen
+- **Anhänge** als Zeile mit Name und Größe, PDF und Bilder im eigenen Vorschaufenster, jeder Anhang vorher durch clamav geprüft
 - **Antworten und Weiterleiten** mit korrektem Threading
   (`In-Reply-To` / `References`)
 - **Verfassen mit Formatierung**: fett, kursiv, unterstrichen,
