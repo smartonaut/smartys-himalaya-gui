@@ -4,6 +4,15 @@ Alle nennenswerten Änderungen an der Smartys Himalaya GUI. Format orientiert
 an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/) und
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.7.0] — 2026-11-21
+
+### Neu
+
+- **Konto auf- und zuklappen:** ein Klick oeffnet das Konto mit seinen Ordnern,
+  ein zweiter Klick auf dasselbe Konto schliesst es wieder (Ordner zu, Liste
+  leer, rechts der Hinweis „Konto waehlen"). Mit vielen Konten liess sich die
+  aufgeklappte Liste sonst nicht wieder verkuerzen.
+
 ## [0.6.0] — 2026-11-21
 
 Schwerpunkt: die Reihenfolge der Gruppen bestimmt der Nutzer.

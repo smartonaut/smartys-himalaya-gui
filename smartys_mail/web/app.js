@@ -236,7 +236,7 @@ function kontoZeile(a){
   stift.title=t('Anzeigename ändern');stift.textContent='✎';
   stift.onclick=ev=>{ev.stopPropagation();kontoUmbenennen(a,div)};
   div.appendChild(stift);
-  div.onclick=()=>waehleKonto(a.name,div);
+  div.onclick=()=>kontoKlick(a,div);
   return div;
 }
 
@@ -345,6 +345,25 @@ async function kontoSpeichern(){
     :('Konto „'+d.name+'" eingerichtet. Lade neu…');
   setTimeout(()=>{document.getElementById('kontenliste').innerHTML='lade…';ladeKonten()},1200);
 }
+/* Ein Klick oeffnet das Konto samt Ordnern, ein zweiter Klick auf dasselbe
+   Konto schliesst es wieder — die Liste wird sonst lang und laesst sich nicht
+   mehr zuklappen. */
+function kontoKlick(a,div){
+  if(konto===a.name && div.classList.contains('aktiv')){kontoSchliessen(div);return}
+  waehleKonto(a.name,div);
+}
+
+function kontoSchliessen(div){
+  konto=null;mail=null;
+  document.querySelectorAll('.konto').forEach(k=>k.classList.remove('aktiv'));
+  if(div)div.classList.remove('aktiv');
+  document.querySelectorAll('.ordnerblock').forEach(b=>b.remove());
+  document.getElementById('listenkopf').textContent='';
+  const liste=document.getElementById('liste');
+  liste.querySelectorAll('.mail,.ladehinweis').forEach(m=>m.remove());
+  document.getElementById('lesen').innerHTML=ui('<div class="hinweis">'+t('Konto wählen')+'</div>');
+}
+
 async function waehleKonto(name,el){
   konto=name;mail=null;ordner='INBOX';
   document.querySelectorAll('.konto').forEach(k=>k.classList.remove('aktiv'));
