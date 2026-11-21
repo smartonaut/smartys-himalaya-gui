@@ -12,6 +12,28 @@ import sys
 WINDOWS = sys.platform.startswith("win")
 
 
+def logo_pfad():
+    """Erstes vorhandenes Logo als Dateipfad, sonst "".
+
+    Zwei Orte, weil die Anwendung in beiden Formen laeuft: aus dem Quellbaum
+    (assets/icons neben dem Modul) und aus dem Paket (Icons nach
+    /usr/share/icons/hicolor). Nur den Modulpfad zu pruefen liefert im Paket
+    einen 404 und die Kopfzeile bleibt leer — ohne Fehlermeldung.
+    """
+    hier = os.path.dirname(os.path.abspath(__file__))
+    kandidaten = [os.path.join(hier, "..", "assets", "icons", n)
+                  for n in ("logo_256.png", "logo_128.png", "logo_64.png")]
+    kandidaten += [f"/usr/share/icons/hicolor/{g}/apps/smartys-himalaya-gui.png"
+                   for g in ("256x256", "128x128", "64x64", "48x48")]
+    kandidaten.append(os.path.join(hier, "..", "assets", "icons",
+                                   "smartys-himalaya-gui.ico"))
+    for k in kandidaten:
+        p = os.path.abspath(os.path.expanduser(k))
+        if os.path.exists(p):
+            return p
+    return ""
+
+
 def himalaya_config():
     """Pfad zur himalaya-Konfiguration."""
     eigene = os.environ.get("SMARTYS_MAIL_CONFIG")

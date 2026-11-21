@@ -302,12 +302,11 @@ class Handler(BaseHTTPRequestHandler):
         # Logo als Bild ausliefern (Kopfzeile der Oberflaeche, Browser-Tab).
         # Gesucht wird im Paket: assets/icons neben dem Modul.
         if pfad in ("/icon.png", "/favicon.ico"):
-            hier = os.path.dirname(os.path.abspath(__file__))
-            for name in ("logo_256.png", "logo_128.png", "logo_64.png"):
-                datei = os.path.abspath(os.path.join(hier, "..", "assets", "icons", name))
-                if os.path.exists(datei):
-                    with open(datei, "rb") as f:
-                        return self._sende(200, "image/png", f.read())
+            datei = pfade.logo_pfad()
+            if datei:
+                typ = "image/x-icon" if datei.lower().endswith(".ico") else "image/png"
+                with open(datei, "rb") as f:
+                    return self._sende(200, typ, f.read())
             return self._sende(404, "text/plain; charset=utf-8", "Kein Logo im Paket")
 
         # Statische Dateien

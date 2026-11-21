@@ -4,6 +4,16 @@ Alle nennenswerten Änderungen an der Smartys Himalaya GUI. Format orientiert
 an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/) und
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.7.1] — 2026-11-21
+
+### Behoben
+
+- **Logo fehlte in der installierten Fassung.** Die Suche nach dem Bild kannte
+  nur `assets/icons` neben dem Modul; im Paket liegen die Icons unter
+  `/usr/share/icons/hicolor/...`, also antwortete `/icon.png` mit 404 und die
+  Kopfzeile blieb leer. Jetzt prueft `pfade.logo_pfad()` beide Orte (und die
+  `.ico`-Fassung).
+
 ## [0.7.0] — 2026-11-21
 
 ### Neu
