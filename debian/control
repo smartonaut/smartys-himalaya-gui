@@ -1,10 +1,10 @@
 Package: smartys-himalaya-gui
-Version: 0.8.0
+Version: 0.8.1
 Section: mail
 Priority: optional
 Architecture: all
-Depends: python3 (>= 3.11), python3-gi, gir1.2-webkit2-4.1, libglib2.0-bin
-Recommends: himalaya
+Depends: python3 (>= 3.11), python3-gi, gir1.2-webkit2-4.1, libglib2.0-bin, clamav
+Recommends: himalaya, clamav-daemon
 Maintainer: Smarty <smartonaut@users.noreply.github.com>
 Homepage: https://github.com/smartonaut/smartys-himalaya-gui
 Description: Grafische Oberflaeche fuer himalaya

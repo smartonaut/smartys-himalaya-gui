@@ -501,22 +501,33 @@ class Handler(BaseHTTPRequestHandler):
         einzeln = _shutil.which("clamscan")
         if not (daemon or einzeln):
             return "nicht-geprueft", "Kein Virenscanner installiert (clamav fehlt)."
+        # --stream: der Daemon laeuft als Benutzer "clamav" und kommt nicht in
+        # das Heimatverzeichnis — er meldet dann "File path check failure:
+        # Permission denied" und, schlimmer, mit Rueckgabewert 0. Mit --stream
+        # liest clamdscan die Datei selbst (als aufrufender Benutzer) und
+        # schickt den Inhalt ueber den lokalen Socket.
         befehl = [daemon or einzeln, "--no-summary", "--stdout"]
-        if not daemon and einzeln:
+        if daemon:
+            befehl.append("--stream")
+        else:
             befehl.append("--database=/var/lib/clamav")
         befehl.append(datei)
         try:
             e = _sp.run(befehl, capture_output=True, text=True, timeout=120)
         except Exception as ex:  # noqa: BLE001
             return "nicht-geprueft", f"Pruefung nicht moeglich: {ex}"
-        # clamscan: 0 = sauber, 1 = Fund, 2 = Fehler
+        aus = ((e.stdout or "") + (e.stderr or "")).strip()
+        # Nicht auf den Rueckgabewert allein verlassen: clamdscan meldet
+        # Lesefehler als "ERROR" und liefert trotzdem 0 — das waere die
+        # gefaehrlichste Verwechslung (Fehler als "sauber").
+        if "FOUND" in aus:
+            treffer = [z for z in aus.splitlines() if "FOUND" in z]
+            return "infiziert", (treffer[0] if treffer else "Fund gemeldet")
+        if "ERROR" in aus or e.returncode not in (0, 1):
+            return "nicht-geprueft", (aus or "Scanner-Fehler")[:200].replace("\n", " ")
         if e.returncode == 0:
             return "sauber", ""
-        if e.returncode == 1:
-            meldung = (e.stdout or "").strip().splitlines()
-            treffer = [z for z in meldung if "FOUND" in z]
-            return "infiziert", (treffer[0] if treffer else "Fund gemeldet")
-        return "nicht-geprueft", (e.stderr or e.stdout or "Scanner-Fehler").strip()[:200]
+        return "nicht-geprueft", (aus or "Scanner-Fehler")[:200]
 
     def _anhang(self, w):
         konto, mid = w("account"), w("id")
@@ -567,6 +578,10 @@ class Handler(BaseHTTPRequestHandler):
         # "kein Scanner installiert") — stillschweigend ausliefern waere hier
         # die falsche Entscheidung.
         self.send_header("X-Virenscan", zustand)
+        self.send_header("X-Virenscan-Werkzeug",
+                         "clamdscan" if __import__("shutil").which("clamdscan")
+                         else "clamscan" if __import__("shutil").which("clamscan")
+                         else "keins")
         if meldung:
             self.send_header("X-Virenscan-Meldung", meldung[:180].replace("\n", " "))
         self.end_headers()

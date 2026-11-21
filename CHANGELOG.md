@@ -4,6 +4,25 @@ Alle nennenswerten Änderungen an der Smartys Himalaya GUI. Format orientiert
 an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/) und
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.8.1] — 2026-11-21
+
+### Geaendert
+
+- **clamav ist Paketabhaengigkeit** (`Depends`/`Requires`). apt und rpm holen
+  den Scanner nur, wenn er noch fehlt — ohne ihn wuerden Anhaenge ungeprueft
+  ausgeliefert. `clamav-daemon` steht als Empfehlung daneben.
+- **Daemon bevorzugt, mit `--stream`.** Der Daemon laeuft als Benutzer
+  `clamav` und darf Dateien im Heimatverzeichnis nicht oeffnen: er meldete
+  „File path check failure: Permission denied" — mit Rueckgabewert 0. Jetzt
+  liest `clamdscan --stream` die Datei selbst und schickt den Inhalt ueber
+  den Socket.
+- **Fehler nicht mehr als „sauber" verkauft.** Der Rueckgabewert allein
+  genuegt nicht (siehe oben); geprueft werden jetzt `FOUND` und `ERROR` in
+  der Ausgabe, alles Unklare gilt als `nicht-geprueft`.
+- Der Kopf der Antwort nennt das Werkzeug (`X-Virenscan-Werkzeug`).
+- `postinst` prueft, was vorhanden ist, startet den Daemon bei Bedarf und
+  schreibt den Pruefstand ins Installationsprotokoll.
+
 ## [0.8.0] — 2026-11-21
 
 Schwerpunkt: Anhaenge. Sie waren nicht anklickbar, weil der Download den

@@ -8,7 +8,7 @@
 # Starter setzen den Pfad selbst. Damit laeuft ein und dasselbe Paket ueberall.
 
 Name:           smartys-himalaya-gui
-Version: 0.8.0
+Version: 0.8.1
 Release:        1%{?dist}
 Summary:        Grafische Oberflaeche fuer himalaya
 License:        MIT
@@ -17,6 +17,9 @@ Source0:        %{name}-%{version}.tar.gz
 BuildArch:      noarch
 
 Requires:       python3
+# Ohne Virenscanner wuerden Anhaenge ungeprueft ausgeliefert; der Paketmanager
+# holt clamav nur, wenn es noch nicht installiert ist.
+Requires:       clamav
 
 # WebKitGTK wird nur fuer die Fenster-Variante gebraucht; die Paketnamen
 # unterscheiden sich je Distribution.
